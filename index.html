@@ -216,10 +216,6 @@
                     <span class="material-icons">sync</span>
                     Synchroniser
                 </button>
-                <button id="viderBtn" class="btn" style="background: #f44336; color: white;">
-                    <span class="material-icons">delete_sweep</span>
-                    Vider Base
-                </button>
             </div>
         </div>
 
@@ -994,7 +990,6 @@
             document.getElementById('exportBtn').addEventListener('click', exporterJoueurs);
             document.getElementById('creerBtn').addEventListener('click', creerEquipes);
             document.getElementById('syncBtn').addEventListener('click', synchroniser);
-            document.getElementById('viderBtn').addEventListener('click', viderBase);
 
             // Auto-import quand un fichier est sélectionné
             document.getElementById('fichierJoueurs').addEventListener('change', importerJoueurs);
