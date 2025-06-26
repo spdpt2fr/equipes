@@ -3,346 +3,297 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestionnaire d'Équipes - Version Cloud</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <title>Gestionnaire d'Équipes - Version Simple</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
+        .card { background: white; padding: 20px; margin: 20px 0; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .status { position: fixed; top: 10px; right: 10px; padding: 10px 20px; border-radius: 20px; color: white; font-weight: bold; z-index: 1000; }
+        .connected { background: #4caf50; }
+        .offline { background: #f44336; }
+        .connecting { background: #ff9800; }
+        input, select, button { padding: 10px; margin: 5px; border: 1px solid #ddd; border-radius: 5px; }
+        button { background: #2196f3; color: white; cursor: pointer; border: none; }
+        button:hover { background: #1976d2; }
+        .player { background: #f9f9f9; padding: 15px; margin: 10px 0; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .team { border: 2px solid #2196f3; margin: 15px 0; padding: 15px; border-radius: 10px; }
+        .team h3 { margin: 0 0 10px 0; color: #2196f3; }
+        .delete-btn { background: #f44336; padding: 5px 10px; }
+        .delete-btn:hover { background: #d32f2f; }
+    </style>
 </head>
-<body style="font-family: 'Roboto', sans-serif; background-color: #f4f6fa; color: #212529; line-height: 1.5; padding: 16px;">
-    <!-- Statut de connexion -->
-    <div id="connectionStatus" style="position: fixed; top: 10px; left: 50%; transform: translateX(-50%); padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 500; z-index: 1000; background: #ff9800; color: white;">
-        🔄 Connexion...
+<body>
+    <div id="status" class="status connecting">🔄 Connexion...</div>
+    
+    <h1 style="text-align: center; color: #2196f3;">🏆 Gestionnaire d'Équipes</h1>
+    
+    <div class="card">
+        <h2>Ajouter un joueur</h2>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <input id="nom" placeholder="Nom du joueur" style="flex: 1; min-width: 150px;">
+            <input id="niveau" type="number" min="1" max="10" placeholder="Niveau">
+            <select id="poste">
+                <option value="avant">Avant</option>
+                <option value="arriere">Arrière</option>
+                <option value="indifferent">Indifférent</option>
+            </select>
+            <input id="groupe" type="number" min="1" placeholder="Groupe">
+            <button onclick="ajouterJoueur()">Ajouter</button>
+        </div>
     </div>
 
-    <div style="max-width: 1200px; margin: 0 auto; display: grid; gap: 16px;">
-        <!-- Titre -->
-        <div style="text-align: center; margin: 20px 0;">
-            <h1 style="color: #1976d2; margin: 0;">🏆 Gestionnaire d'Équipes</h1>
+    <div class="card">
+        <h2>Actions</h2>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="synchroniser()" style="background: #4caf50;">🔄 Synchroniser</button>
+            <input id="nbEquipes" type="number" min="1" placeholder="Nombre d'équipes">
+            <button onclick="creerEquipes()" style="background: #ff9800;">⚽ Créer Équipes</button>
+            <button onclick="viderBase()" style="background: #f44336;">🗑️ Vider Base</button>
         </div>
-
-        <!-- Saisie des joueurs -->
-        <div style="background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
-            <h2 style="font-size: 20px; font-weight: 500; color: #1976d2; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-                <span class="material-icons">person_add</span>
-                Saisie des Joueurs
-            </h2>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; align-items: end; margin-bottom: 16px;">
-                <input id="nom" type="text" placeholder="Nom du joueur" style="padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; outline: none;" required>
-                <input id="niveau" type="number" placeholder="Niveau (1-10)" min="1" max="10" style="padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; outline: none;" required>
-                <select id="poste" style="padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; outline: none;">
-                    <option value="avant">Avant</option>
-                    <option value="arriere">Arrière</option>
-                    <option value="indifferent">Indifférent</option>
-                </select>
-                <input id="groupe" type="number" placeholder="Groupe (optionnel)" min="1" style="padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; outline: none;">
-                <button id="ajouterBtn" style="padding: 12px 24px; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; background: #1976d2; color: white; display: flex; align-items: center; gap: 8px;">
-                    <span class="material-icons">add</span>
-                    Ajouter Joueur
-                </button>
-            </div>
-        </div>
-
-        <!-- Actions -->
-        <div style="background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
-            <h2 style="font-size: 20px; font-weight: 500; color: #1976d2; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-                <span class="material-icons">settings</span>
-                Actions
-            </h2>
-            <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
-                <button id="syncBtn" style="padding: 12px 24px; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; background: #388e3c; color: white; display: flex; align-items: center; gap: 8px;">
-                    <span class="material-icons">sync</span>
-                    Synchroniser
-                </button>
-                <input id="nbEquipes" type="number" placeholder="Nombre d'équipes" min="1" style="padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; outline: none; width: 200px;">
-                <button id="creerBtn" style="padding: 12px 24px; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; background: #f57c00; color: white; display: flex; align-items: center; gap: 8px;">
-                    <span class="material-icons">group_add</span>
-                    Créer Équipes
-                </button>
-            </div>
-        </div>
-
-        <!-- Liste des joueurs -->
-        <div id="listeJoueursCard" style="background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); display: none;">
-            <h2 style="font-size: 20px; font-weight: 500; color: #1976d2; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-                <span class="material-icons">list</span>
-                Liste des Joueurs
-            </h2>
-            <div id="listeJoueurs"></div>
-        </div>
-
-        <!-- Équipes -->
-        <div id="equipesContainer"></div>
     </div>
+
+    <div id="joueursContainer" class="card" style="display: none;">
+        <h2>Joueurs (<span id="count">0</span>)</h2>
+        <div id="joueursList"></div>
+    </div>
+
+    <div id="equipesContainer"></div>
 
     <script>
         // Configuration Supabase
         const SUPABASE_URL = 'https://wwonmuezjfvtfjjnxczx.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3b25tdWV6amZ2dGZqam54Y3p4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5NDUxMTQsImV4cCI6MjA2NjUyMTExNH0.P4TY4lyr0aXavzz8tJlZJFb0v2sDFMZstIFH2vvipnw';
         
-        let supabaseClient = null;
+        let supabaseClient;
         let joueurs = [];
         let equipes = [];
         let isOnline = false;
-        let syncInProgress = false;
 
         // Fonctions utilitaires
-        function showToast(message, isError = false) {
+        function updateStatus(message, className) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status ' + className;
+        }
+
+        function toast(message, error = false) {
             const toast = document.createElement('div');
             toast.style.cssText = `
-                position: fixed; top: 60px; right: 20px; 
-                background: ${isError ? '#d32f2f' : '#388e3c'}; color: white; 
-                padding: 12px 20px; border-radius: 8px; 
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); z-index: 1000; 
-                transform: translateX(400px); transition: transform 0.3s ease;
+                position: fixed; bottom: 20px; right: 20px; 
+                background: ${error ? '#f44336' : '#4caf50'}; color: white; 
+                padding: 15px 20px; border-radius: 5px; z-index: 1001;
+                animation: slideIn 0.3s ease;
             `;
             toast.textContent = message;
             document.body.appendChild(toast);
-
-            setTimeout(() => toast.style.transform = 'translateX(0)', 100);
-            setTimeout(() => {
-                toast.style.transform = 'translateX(400px)';
-                setTimeout(() => document.body.removeChild(toast), 300);
-            }, 3000);
+            setTimeout(() => document.body.removeChild(toast), 3000);
         }
 
-        function updateConnectionStatus(status) {
-            const statusElement = document.getElementById('connectionStatus');
-            
-            switch(status) {
-                case 'connected':
-                    statusElement.innerHTML = '🟢 Synchronisé';
-                    statusElement.style.backgroundColor = '#4caf50';
-                    break;
-                case 'connecting':
-                    statusElement.innerHTML = '🔄 Connexion...';
-                    statusElement.style.backgroundColor = '#ff9800';
-                    break;
-                case 'offline':
-                    statusElement.innerHTML = '🔴 Hors ligne';
-                    statusElement.style.backgroundColor = '#f44336';
-                    break;
-            }
-        }
-
-        // Initialisation Supabase
-        async function initSupabase() {
+        // Initialisation
+        async function init() {
             try {
-                updateConnectionStatus('connecting');
-                console.log('Initialisation Supabase...');
+                updateStatus('🔄 Connexion...', 'connecting');
+                console.log('Initialisation...');
                 
-                // Créer le client Supabase
+                // Créer client Supabase
                 supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 console.log('Client créé');
                 
-                // Test de connexion
-                const { data, error } = await supabaseClient.from('players').select('count(*)', { count: 'exact', head: true });
+                // Test connexion
+                const { data, error } = await supabaseClient.from('players').select('*');
+                if (error) throw error;
                 
-                if (error) {
-                    throw error;
-                }
-                
-                console.log('Connexion réussie');
                 isOnline = true;
-                updateConnectionStatus('connected');
-                await chargerJoueurs();
-                showToast('Connexion Supabase établie');
+                joueurs = data || [];
+                updateStatus('🟢 Connecté (' + joueurs.length + ' joueurs)', 'connected');
+                console.log('Connexion OK, joueurs:', joueurs.length);
+                afficherJoueurs();
+                toast('Connexion Supabase réussie !');
                 
             } catch (error) {
-                console.error('Erreur connexion Supabase:', error);
+                console.error('Erreur:', error);
                 isOnline = false;
-                updateConnectionStatus('offline');
-                chargerJoueursLocal();
-                showToast('Mode hors ligne activé', false);
+                updateStatus('🔴 Hors ligne', 'offline');
+                toast('Erreur connexion: ' + error.message, true);
             }
         }
 
-        // Fonctions de données
-        async function chargerJoueurs() {
-            if (isOnline && supabaseClient) {
-                try {
-                    const { data, error } = await supabaseClient.from('players').select('*').order('nom');
-                    if (error) throw error;
-                    joueurs = data || [];
-                    console.log('Joueurs chargés:', joueurs.length);
-                } catch (error) {
-                    console.error('Erreur chargement:', error);
-                    chargerJoueursLocal();
-                }
-            } else {
-                chargerJoueursLocal();
-            }
-            afficherJoueurs();
-        }
-
-        function chargerJoueursLocal() {
-            const data = localStorage.getItem('gestionnaire_joueurs_cloud');
-            if (data) {
-                joueurs = JSON.parse(data);
-                console.log('Joueurs chargés depuis localStorage:', joueurs.length);
-            }
-        }
-
-        function sauvegarderJoueursLocal() {
-            localStorage.setItem('gestionnaire_joueurs_cloud', JSON.stringify(joueurs));
-        }
-
+        // Ajouter un joueur
         async function ajouterJoueur() {
             const nom = document.getElementById('nom').value.trim();
             const niveau = parseInt(document.getElementById('niveau').value);
             const poste = document.getElementById('poste').value;
             const groupe = parseInt(document.getElementById('groupe').value) || null;
 
-            if (!nom) {
-                showToast('Veuillez saisir un nom de joueur', true);
-                return;
-            }
-
-            if (!niveau || niveau < 1 || niveau > 10) {
-                showToast('Le niveau doit être entre 1 et 10', true);
+            if (!nom || !niveau || niveau < 1 || niveau > 10) {
+                toast('Veuillez remplir correctement les champs', true);
                 return;
             }
 
             if (joueurs.find(j => j.nom.toLowerCase() === nom.toLowerCase())) {
-                showToast('Ce joueur existe déjà', true);
+                toast('Ce joueur existe déjà', true);
                 return;
             }
 
             const nouveauJoueur = { nom, niveau, poste, groupe, actif: true };
-            
-            // Ajouter localement d'abord
-            joueurs.push(nouveauJoueur);
-            
-            // Sauvegarder selon le mode
-            if (isOnline && supabaseClient) {
-                try {
-                    const { error } = await supabaseClient.from('players').insert([nouveauJoueur]);
-                    if (error) throw error;
-                    showToast(`Joueur ${nom} ajouté et synchronisé`);
-                } catch (error) {
-                    console.error('Erreur sauvegarde Supabase:', error);
-                    sauvegarderJoueursLocal();
-                    showToast(`Joueur ${nom} ajouté (sauvegarde locale)`);
-                }
-            } else {
-                sauvegarderJoueursLocal();
-                showToast(`Joueur ${nom} ajouté (mode hors ligne)`);
-            }
 
-            // Reset formulaire
-            document.getElementById('nom').value = '';
-            document.getElementById('niveau').value = '';
-            document.getElementById('groupe').value = '';
-            
-            afficherJoueurs();
+            try {
+                if (isOnline) {
+                    const { data, error } = await supabaseClient
+                        .from('players')
+                        .insert([nouveauJoueur])
+                        .select();
+                    
+                    if (error) throw error;
+                    
+                    joueurs.push(data[0]);
+                    toast('Joueur ajouté et synchronisé !');
+                } else {
+                    joueurs.push(nouveauJoueur);
+                    toast('Joueur ajouté (mode hors ligne)');
+                }
+
+                // Reset formulaire
+                document.getElementById('nom').value = '';
+                document.getElementById('niveau').value = '';
+                document.getElementById('groupe').value = '';
+                
+                afficherJoueurs();
+                updateStatus('🟢 Connecté (' + joueurs.length + ' joueurs)', 'connected');
+
+            } catch (error) {
+                console.error('Erreur ajout:', error);
+                toast('Erreur: ' + error.message, true);
+            }
         }
 
+        // Supprimer un joueur
         async function supprimerJoueur(index) {
-            if (!confirm("Supprimer ce joueur ?")) return;
+            if (!confirm('Supprimer ce joueur ?')) return;
             
             const joueur = joueurs[index];
             
-            if (isOnline && supabaseClient) {
-                try {
-                    const { error } = await supabaseClient.from('players').delete().eq('nom', joueur.nom);
-                    if (error) throw error;
-                    showToast(`Joueur ${joueur.nom} supprimé`);
-                } catch (error) {
-                    console.error('Erreur suppression:', error);
-                    showToast('Erreur de suppression', true);
-                    return;
-                }
-            } else {
-                sauvegarderJoueursLocal();
-                showToast(`Joueur ${joueur.nom} supprimé (mode hors ligne)`);
-            }
-            
-            joueurs.splice(index, 1);
-            afficherJoueurs();
-        }
-
-        async function synchroniser() {
-            if (syncInProgress) return;
-            
-            syncInProgress = true;
-            const syncBtn = document.getElementById('syncBtn');
-            const originalText = syncBtn.innerHTML;
-            syncBtn.innerHTML = '<span class="material-icons">sync</span> Synchronisation...';
-            syncBtn.disabled = true;
-
             try {
-                if (!isOnline) {
-                    await initSupabase();
+                if (isOnline) {
+                    const { error } = await supabaseClient
+                        .from('players')
+                        .delete()
+                        .eq('id', joueur.id);
+                    
+                    if (error) throw error;
+                    toast('Joueur supprimé de la base !');
+                } else {
+                    toast('Joueur supprimé (mode hors ligne)');
                 }
                 
-                if (isOnline) {
-                    await chargerJoueurs();
-                    showToast('Synchronisation réussie');
-                } else {
-                    showToast('Impossible de se connecter', true);
-                }
+                joueurs.splice(index, 1);
+                afficherJoueurs();
+                updateStatus('🟢 Connecté (' + joueurs.length + ' joueurs)', 'connected');
+                
             } catch (error) {
-                showToast('Erreur de synchronisation', true);
-            } finally {
-                syncInProgress = false;
-                syncBtn.innerHTML = originalText;
-                syncBtn.disabled = false;
+                console.error('Erreur suppression:', error);
+                toast('Erreur: ' + error.message, true);
             }
         }
 
-        function afficherJoueurs() {
-            const carte = document.getElementById('listeJoueursCard');
-            const liste = document.getElementById('listeJoueurs');
+        // Synchroniser
+        async function synchroniser() {
+            try {
+                updateStatus('🔄 Synchronisation...', 'connecting');
+                
+                if (!isOnline) {
+                    await init();
+                    return;
+                }
+                
+                const { data, error } = await supabaseClient.from('players').select('*');
+                if (error) throw error;
+                
+                joueurs = data || [];
+                afficherJoueurs();
+                updateStatus('🟢 Synchronisé (' + joueurs.length + ' joueurs)', 'connected');
+                toast('Synchronisation réussie !');
+                
+            } catch (error) {
+                console.error('Erreur sync:', error);
+                toast('Erreur synchronisation: ' + error.message, true);
+                updateStatus('🔴 Erreur sync', 'offline');
+            }
+        }
 
+        // Vider la base
+        async function viderBase() {
+            if (!confirm('Vider toute la base de données ?')) return;
+            
+            try {
+                if (isOnline) {
+                    const { error } = await supabaseClient
+                        .from('players')
+                        .delete()
+                        .neq('id', 0); // Supprimer tous
+                    
+                    if (error) throw error;
+                }
+                
+                joueurs = [];
+                afficherJoueurs();
+                updateStatus('🟢 Base vidée', 'connected');
+                toast('Base de données vidée !');
+                
+            } catch (error) {
+                console.error('Erreur vidage:', error);
+                toast('Erreur: ' + error.message, true);
+            }
+        }
+
+        // Afficher joueurs
+        function afficherJoueurs() {
+            const container = document.getElementById('joueursContainer');
+            const list = document.getElementById('joueursList');
+            const count = document.getElementById('count');
+            
+            count.textContent = joueurs.length;
+            
             if (joueurs.length === 0) {
-                carte.style.display = 'none';
+                container.style.display = 'none';
                 return;
             }
-
-            carte.style.display = 'block';
-            liste.innerHTML = '';
-
+            
+            container.style.display = 'block';
+            list.innerHTML = '';
+            
             joueurs.forEach((j, index) => {
-                const playerCard = document.createElement('div');
-                playerCard.style.cssText = `
-                    background: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 8px; 
-                    padding: 16px; display: flex; justify-content: space-between; 
-                    align-items: center; margin-bottom: 8px; transition: all 0.3s ease;
-                `;
-
-                playerCard.innerHTML = `
+                const div = document.createElement('div');
+                div.className = 'player';
+                div.innerHTML = `
                     <div>
-                        <strong>${j.nom}</strong> (Niveau ${j.niveau}) - ${j.poste}
-                        ${j.groupe ? ` - Groupe ${j.groupe}` : ''}
+                        <strong>${j.nom}</strong> - Niveau ${j.niveau} - ${j.poste}
+                        ${j.groupe ? ' (Groupe ' + j.groupe + ')' : ''}
                     </div>
-                    <button onclick="supprimerJoueur(${index})" style="background: #d32f2f; color: white; border: none; padding: 8px; border-radius: 50%; width: 36px; height: 36px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                        <span class="material-icons">delete</span>
-                    </button>
+                    <button class="delete-btn" onclick="supprimerJoueur(${index})">Supprimer</button>
                 `;
-
-                liste.appendChild(playerCard);
+                list.appendChild(div);
             });
         }
 
+        // Créer équipes
         function creerEquipes() {
             const nb = parseInt(document.getElementById('nbEquipes').value);
             if (!nb || nb <= 0) {
-                showToast('Nombre d\'équipes invalide', true);
+                toast('Nombre d\'équipes invalide', true);
                 return;
             }
 
-            const joueursActifs = joueurs.filter(j => j.actif !== false);
-            if (joueursActifs.length === 0) {
-                showToast('Aucun joueur disponible', true);
+            if (joueurs.length === 0) {
+                toast('Aucun joueur disponible', true);
                 return;
             }
 
-            // Algorithme simple d'équilibrage
+            // Algorithme simple
             equipes = Array.from({length: nb}, () => ({ joueurs: [], total: 0 }));
             
-            // Trier par niveau décroissant
-            joueursActifs.sort((a, b) => b.niveau - a.niveau);
+            const joueursActifs = [...joueurs].sort((a, b) => b.niveau - a.niveau);
             
-            // Répartir les joueurs
             joueursActifs.forEach(joueur => {
                 equipes.sort((a, b) => a.total - b.total);
                 equipes[0].joueurs.push(joueur);
@@ -350,85 +301,40 @@
             });
 
             afficherEquipes();
-            showToast('Équipes créées avec succès');
+            toast('Équipes créées !');
         }
 
+        // Afficher équipes
         function afficherEquipes() {
             const container = document.getElementById('equipesContainer');
+            
             if (equipes.length === 0) {
                 container.innerHTML = '';
                 return;
             }
 
-            let html = `
-                <div style="background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
-                    <h2 style="font-size: 20px; font-weight: 500; color: #1976d2; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-                        <span class="material-icons">groups</span>
-                        Équipes Constituées
-                    </h2>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-top: 16px;">
-            `;
-
+            let html = '<div class="card"><h2>Équipes Créées</h2>';
+            
             equipes.forEach((e, index) => {
-                const teamColors = ['#1976d2', '#388e3c', '#f57c00', '#d32f2f'];
-                const color = teamColors[index % teamColors.length];
-                
                 html += `
-                    <div style="background: white; border: 2px solid ${color}; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
-                        <div style="font-size: 18px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: ${color};">
-                            <span class="material-icons">group</span>
-                            Équipe ${index + 1}
-                        </div>
-                        <ul style="list-style: none; margin-bottom: 16px; padding: 0;">
+                    <div class="team">
+                        <h3>Équipe ${index + 1} (Total: ${e.total})</h3>
+                        <ul>
                 `;
                 
                 e.joueurs.forEach(j => {
-                    html += `
-                        <li style="padding: 8px 0; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 8px;">
-                            <span class="material-icons">person</span>
-                            ${j.nom} (${j.niveau}) - ${j.poste}
-                        </li>
-                    `;
+                    html += `<li>${j.nom} (${j.niveau}) - ${j.poste}</li>`;
                 });
                 
-                html += `
-                        </ul>
-                        <div style="font-weight: 700; color: #666; font-size: 14px; padding: 8px; background: #f9f9f9; border-radius: 6px; text-align: center;">
-                            Total niveau: ${e.total}
-                        </div>
-                    </div>
-                `;
+                html += '</ul></div>';
             });
             
-            html += '</div></div>';
+            html += '</div>';
             container.innerHTML = html;
         }
 
-        // Event listeners
-        window.onload = async () => {
-            console.log("Page chargée - Initialisation...");
-            
-            // Initialiser Supabase
-            await initSupabase();
-            
-            // Event listeners
-            document.getElementById('ajouterBtn').addEventListener('click', ajouterJoueur);
-            document.getElementById('syncBtn').addEventListener('click', synchroniser);
-            document.getElementById('creerBtn').addEventListener('click', creerEquipes);
-
-            // Support clavier
-            document.getElementById('nom').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') ajouterJoueur();
-            });
-
-            document.getElementById('niveau').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') ajouterJoueur();
-            });
-
-            document.getElementById('nbEquipes').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') creerEquipes();
-            });
-        };
+        // Démarrage
+        window.onload = init;
     </script>
 </body>
 </html>
