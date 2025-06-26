@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Import Rapide CSV</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        h1 { color: #2196f3; text-align: center; }
+        #status { font-size: 18px; margin: 20px 0; padding: 15px; background: #f0f8ff; border-radius: 8px; }
+        #progress { font-size: 16px; margin: 10px 0; color: #666; }
+        .success { background: #e8f5e8 !important; color: #2e7d32; }
+        .error { background: #ffebee !important; color: #c62828; }
+        a { display: block; margin: 20px 0; padding: 15px; background: #2196f3; color: white; text-decoration: none; border-radius: 8px; text-align: center; }
+    </style>
+</head>
+<body>
+    <h1>🚀 Import Rapide CSV</h1>
+    <div id="status">Initialisation...</div>
+    <div id="progress"></div>
+    
+    <script>
+        const SUPABASE_URL = 'https://wwonmuezjfvtfjjnxczx.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3b25tdWV6amZ2dGZqam54Y3p4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5NDUxMTQsImV4cCI6MjA2NjUyMTExNH0.P4TY4lyr0aXavzz8tJlZJFb0v2sDFMZstIFH2vvipnw';
+        
+        const csvData = `Loran,6,arriere
+Claire,5,avant
+Fred,4,avant
+Charles,7,avant
+Alexis,7,indifferent
+Arnaud,5,indifferent
+LauLau,5,indifferent
+Jules,7,indifferent
+Nicolas,6,avant
+Alex,9,avant
+Soazig,3,avant
+Alanis,4,avant
+Gael,6,indifferent
+Charlene,4,avant
+11,9,avant
+Favio,8,indifferent
+Tif,6,indifferent
+Romain,6,arriere
+Thomas,5,avant
+Doudou,5,avant
+Quentin,6,avant
+Blaise,5,arriere
+Lison,6,avant
+Nico S,5,indifferent
+Charly,6,avant
+Lamine,5,indifferent`;
+
+        async function importData() {
+            const statusEl = document.getElementById('status');
+            const progressEl = document.getElementById('progress');
+            
+            try {
+                statusEl.textContent = '🔄 Connexion à Supabase...';
+                
+                const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                
+                // Vider la base d'abord
+                statusEl.textContent = '🗑️ Vidage de la base existante...';
+                await supabaseClient.from('players').delete().neq('id', 0);
+                progressEl.textContent = 'Base vidée';
+                
+                // Parser le CSV
+                const lines = csvData.trim().split('\n');
+                const players = lines.map(line => {
+                    const [nom, niveau, poste] = line.split(',').map(s => s.trim());
+                    return {
+                        nom: nom,
+                        niveau: parseInt(niveau),
+                        poste: poste.toLowerCase().replace('é', 'e'),
+                        groupe: null,
+                        actif: true
+                    };
+                });
+                
+                statusEl.textContent = `📥 Import de ${players.length} joueurs...`;
+                
+                // Import par batches de 5
+                const batchSize = 5;
+                let imported = 0;
+                
+                for (let i = 0; i < players.length; i += batchSize) {
+                    const batch = players.slice(i, i + batchSize);
+                    
+                    const { data, error } = await supabaseClient
+                        .from('players')
+                        .insert(batch)
+                        .select();
+                    
+                    if (error) throw error;
+                    
+                    imported += batch.length;
+                    progressEl.textContent = `Importé: ${imported}/${players.length} joueurs`;
+                    
+                    // Délai entre les batches
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                }
+                
+                statusEl.textContent = `✅ Import terminé: ${imported} joueurs importés avec succès !`;
+                statusEl.className = 'success';
+                progressEl.textContent = 'Tous vos joueurs sont maintenant dans la base Supabase !';
+                
+                // Lien vers l'app
+                const link = document.createElement('a');
+                link.href = 'https://equipesoksub.netlify.app/';
+                link.target = '_blank';
+                link.textContent = '🚀 Aller à l\'Application Gestionnaire d\'Équipes';
+                document.body.appendChild(link);
+                
+            } catch (error) {
+                statusEl.textContent = `❌ Erreur: ${error.message}`;
+                statusEl.className = 'error';
+                progressEl.textContent = 'Veuillez réessayer ou contacter le support';
+                console.error('Erreur:', error);
+            }
+        }
+        
+        // Démarrer l'import automatiquement
+        window.onload = () => {
+            setTimeout(importData, 1000);
+        };
+    </script>
+</body>
+</html>
