@@ -773,7 +773,7 @@
                     html += `
                         <li class="team-player" onclick="changerEquipe(${idx}, ${e.joueurs.indexOf(j)})">
                             <span class="material-icons">person</span>
-                            ${j.nom} - ${j.poste} (${j.niveau})
+                            ${j.nom} - ${j.poste}${afficherTotal ? ' (' + j.niveau + ')' : ''}
                         </li>
                     `;
                 });
