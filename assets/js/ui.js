@@ -147,16 +147,17 @@ function attachEventListeners() {
     }
 
     // Formulaire d'ajout de joueur
-    const playerForm = document.getElementById('playerForm');
-    if (playerForm) {
-        playerForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            if (window.AppPlayers && window.AppPlayers.ajouterJoueur) {
-                window.AppPlayers.ajouterJoueur();
-            }
-        });
-        console.log('✅ Event listener formulaire attaché');
-    }
+// Bouton d'ajout de joueur
+const ajouterBtn = document.getElementById('ajouterBtn');
+if (ajouterBtn) {
+    ajouterBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (window.AppPlayers && window.AppPlayers.ajouterJoueur) {
+            window.AppPlayers.ajouterJoueur();
+        }
+    });
+    console.log('✅ Event listener ajout attaché');
+}
 
     // Bouton de recherche
     const searchInput = document.getElementById('searchInput');
