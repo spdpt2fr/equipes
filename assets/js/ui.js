@@ -129,6 +129,68 @@ function afficherJoueurs() {
     });
 }
 
+// === ATTACHER LES EVENT LISTENERS ===
+function attachEventListeners() {
+    console.log('🔗 Attachement des event listeners...');
+    
+    // Sélecteur de club
+    const clubSelect = document.getElementById('clubSelect');
+    if (clubSelect) {
+        clubSelect.addEventListener('change', function() {
+            if (window.AppClubs && window.AppClubs.changerClub) {
+                window.AppClubs.changerClub(this.value);
+            }
+        });
+        console.log('✅ Event listener club attaché');
+    }
+
+    // Formulaire d'ajout de joueur
+    const playerForm = document.getElementById('playerForm');
+    if (playerForm) {
+        playerForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (window.AppPlayers && window.AppPlayers.ajouterJoueur) {
+                window.AppPlayers.ajouterJoueur();
+            }
+        });
+        console.log('✅ Event listener formulaire attaché');
+    }
+
+    // Bouton de recherche
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', rechercherJoueurs);
+        console.log('✅ Event listener recherche attaché');
+    }
+
+    // Bouton effacer recherche
+    const clearSearchBtn = document.getElementById('clearSearchBtn');
+    if (clearSearchBtn) {
+        clearSearchBtn.addEventListener('click', effacerRecherche);
+        console.log('✅ Event listener effacer recherche attaché');
+    }
+
+    // Bouton tri
+    const sortBtn = document.getElementById('sortBtn');
+    if (sortBtn) {
+        sortBtn.addEventListener('click', toggleTriJoueurs);
+        console.log('✅ Event listener tri attaché');
+    }
+
+    // Bouton créer équipes
+    const createTeamsBtn = document.getElementById('createTeamsBtn');
+    if (createTeamsBtn) {
+        createTeamsBtn.addEventListener('click', function() {
+            if (window.AppTeams && window.AppTeams.creerEquipes) {
+                window.AppTeams.creerEquipes();
+            }
+        });
+        console.log('✅ Event listener créer équipes attaché');
+    }
+
+    console.log('🎉 Tous les event listeners attachés avec succès!');
+}
+
 // === EXPORT DES FONCTIONS ===
 window.AppUI = {
     rechercherJoueurs,
@@ -138,8 +200,10 @@ window.AppUI = {
     toggleTriJoueurs,
     toggleTriEquipes,
     toggleTotalNiveaux,
-    afficherJoueurs
+    afficherJoueurs,
+    attachEventListeners
 };
 
 // Rendre afficherJoueurs globale pour compatibilité
 window.afficherJoueurs = afficherJoueurs;
+window.attachEventListeners = attachEventListeners;
