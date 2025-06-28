@@ -380,6 +380,12 @@
             localStorage.setItem('hockeySub_clubActuel', clubId);
         }
 
+        function getTableName() {
+            if (!clubActuel) return 'players_grenoble'; // fallback
+            return clubActuel.nom.toLowerCase() === 'grenoble' ? 'players_grenoble' : 'players_jeeves';
+        }
+
+
         async function chargerClubs() {
             try {
                 const { data, error } = await supabaseClient.from('clubs').select('*');
@@ -420,36 +426,37 @@
         }
 
         async function chargerJoueurs() {
-            try {
-                if (!clubActuel) return;
-                
-                const { data, error } = await supabaseClient
-                    .from('players')
-                    .select('*')
-                    .eq('club_id', clubActuel.id);
-                
-                if (error) throw error;
-                
-                joueurs = (data || []).map(j => ({
-                    id: j.id,
-                    nom: j.nom,
-                    niveau: j.niveau,
-                    poste: j.poste,
-                    groupe: j.groupe,
-                    actif: j.actif !== false
-                }));
-                
-                // Mettre à jour l'info du club
-                document.getElementById('clubInfo').textContent = `${joueurs.length} joueur(s)`;
-                
-                return joueurs;
-            } catch (error) {
-                console.error('Erreur chargement joueurs:', error);
-                joueurs = [];
-                return [];
-            }
-        }
-
+    try {
+        if (!clubActuel) return;
+        
+        const tableName = getTableName();
+        console.log(`Chargement depuis la table: ${tableName}`);
+        
+        const { data, error } = await supabaseClient
+            .from(tableName)  // ← FIX: utilise la table spécifique au club
+            .select('*');      // ← FIX: plus de filtrage par club_id
+        
+        if (error) throw error;
+        
+        joueurs = (data || []).map(j => ({
+            id: j.id,
+            nom: j.nom,
+            niveau: j.niveau,
+            poste: j.poste,
+            groupe: j.groupe,
+            actif: j.actif !== false
+        }));
+        
+        // Mettre à jour l'info du club
+        document.getElementById('clubInfo').textContent = `${joueurs.length} joueur(s)`;
+        
+        return joueurs;
+    } catch (error) {
+        console.error('Erreur chargement joueurs:', error);
+        joueurs = [];
+        return [];
+    }
+}
         // === FONCTIONS UTILITAIRES ===
         function updateStatus(message, className) {
             const status = document.getElementById('status');
@@ -503,90 +510,96 @@
 
         // === GESTION DES JOUEURS ===
         async function ajouterJoueur() {
-            const nom = document.getElementById('nom').value.trim();
-            const niveau = parseInt(document.getElementById('niveau').value);
-            const poste = document.getElementById('poste').value;
-            const groupe = parseInt(document.getElementById('groupe').value) || null;
+    const nom = document.getElementById('nom').value.trim();
+    const niveau = parseInt(document.getElementById('niveau').value);
+    const poste = document.getElementById('poste').value;
+    const groupe = parseInt(document.getElementById('groupe').value) || null;
 
-            if (!nom) {
-                showToast('Veuillez saisir un nom de joueur', true);
-                return;
-            }
+    if (!nom) {
+        showToast('Veuillez saisir un nom de joueur', true);
+        return;
+    }
 
-            if (!niveau || niveau < 1 || niveau > 10) {
-                showToast('Le niveau doit être entre 1 et 10', true);
-                return;
-            }
+    if (!niveau || niveau < 1 || niveau > 10) {
+        showToast('Le niveau doit être entre 1 et 10', true);
+        return;
+    }
 
-            // Vérifier si le joueur existe déjà
-            if (joueurs.find(j => j.nom.toLowerCase() === nom.toLowerCase())) {
-                showToast('Ce joueur existe déjà', true);
-                return;
-            }
+    // Vérifier si le joueur existe déjà
+    if (joueurs.find(j => j.nom.toLowerCase() === nom.toLowerCase())) {
+        showToast('Ce joueur existe déjà', true);
+        return;
+    }
 
-            const nouveauJoueur = { nom, niveau, poste, groupe, actif: true, club_id: clubActuel.id };
+    const nouveauJoueur = { nom, niveau, poste, groupe, actif: true };
+    // ← FIX: Plus de club_id dans l'objet
 
-            try {
-                if (isOnline) {
-                    const { data, error } = await supabaseClient
-                        .from('players')
-                        .insert([nouveauJoueur])
-                        .select();
-                    
-                    if (error) throw error;
-                    
-                    nouveauJoueur.id = data[0].id;
-                    showToast(`Joueur ${nom} ajouté et synchronisé !`);
-                } else {
-                    nouveauJoueur.id = Date.now(); // ID temporaire en mode hors ligne
-                    showToast(`Joueur ${nom} ajouté (mode hors ligne)`);
-                }
-
-                joueurs.push(nouveauJoueur);
-                afficherJoueurs();
-                updateStatus(`🟢 Connecté (${joueurs.length} joueurs)`, 'connected');
-
-                // Reset form
-                document.getElementById('nom').value = '';
-                document.getElementById('niveau').value = '';
-                document.getElementById('groupe').value = '';
-                document.getElementById('nom').focus();
-
-            } catch (error) {
-                console.error('Erreur ajout joueur:', error);
-                showToast('Erreur: ' + error.message, true);
-            }
-        }
-
-        async function supprimerJoueur(index) {
-            if (!confirm("Supprimer ce joueur ?")) return;
+    try {
+        if (isOnline) {
+            const tableName = getTableName();
+            console.log(`Ajout dans la table: ${tableName}`);
             
-            const joueur = joueurs[index];
-            const nom = joueur.nom;
-
-            try {
-                if (isOnline && joueur.id) {
-                    const { error } = await supabaseClient
-                        .from('players')
-                        .delete()
-                        .eq('id', joueur.id);
-                    
-                    if (error) throw error;
-                    showToast(`Joueur ${nom} supprimé de la base !`);
-                } else {
-                    showToast(`Joueur ${nom} supprimé (mode hors ligne)`);
-                }
-                
-                joueurs.splice(index, 1);
-                afficherJoueurs();
-                updateStatus(`🟢 Connecté (${joueurs.length} joueurs)`, 'connected');
-                
-            } catch (error) {
-                console.error('Erreur suppression:', error);
-                showToast('Erreur: ' + error.message, true);
-            }
+            const { data, error } = await supabaseClient
+                .from(tableName)  // ← FIX: utilise la table spécifique au club
+                .insert([nouveauJoueur])
+                .select();
+            
+            if (error) throw error;
+            
+            nouveauJoueur.id = data[0].id;
+            showToast(`Joueur ${nom} ajouté et synchronisé !`);
+        } else {
+            nouveauJoueur.id = Date.now(); // ID temporaire en mode hors ligne
+            showToast(`Joueur ${nom} ajouté (mode hors ligne)`);
         }
 
+        joueurs.push(nouveauJoueur);
+        afficherJoueurs();
+        updateStatus(`🟢 Connecté (${joueurs.length} joueurs - ${clubActuel.nom})`, 'connected');
+
+        // Reset form
+        document.getElementById('nom').value = '';
+        document.getElementById('niveau').value = '';
+        document.getElementById('groupe').value = '';
+        document.getElementById('nom').focus();
+
+    } catch (error) {
+        console.error('Erreur ajout joueur:', error);
+        showToast('Erreur: ' + error.message, true);
+    }
+}
+
+       async function supprimerJoueur(index) {
+    if (!confirm("Supprimer ce joueur ?")) return;
+    
+    const joueur = joueurs[index];
+    const nom = joueur.nom;
+
+    try {
+        if (isOnline && joueur.id) {
+            const tableName = getTableName();
+            console.log(`Suppression de la table: ${tableName}`);
+            
+            const { error } = await supabaseClient
+                .from(tableName)  // ← FIX: utilise la table spécifique au club
+                .delete()
+                .eq('id', joueur.id);
+            
+            if (error) throw error;
+            showToast(`Joueur ${nom} supprimé de la base !`);
+        } else {
+            showToast(`Joueur ${nom} supprimé (mode hors ligne)`);
+        }
+        
+        joueurs.splice(index, 1);
+        afficherJoueurs();
+        updateStatus(`🟢 Connecté (${joueurs.length} joueurs - ${clubActuel.nom})`, 'connected');
+        
+    } catch (error) {
+        console.error('Erreur suppression:', error);
+        showToast('Erreur: ' + error.message, true);
+    }
+}
         async function modifierJoueur(index, champ, valeur) {
             const joueur = joueurs[index];
             const ancienneValeur = joueur[champ];
@@ -624,27 +637,30 @@
             }
 
             // Synchroniser avec Supabase si en ligne
-            try {
-                if (isOnline && joueur.id) {
-                    const updateData = {
-                        nom: joueur.nom,
-                        niveau: joueur.niveau,
-                        poste: joueur.poste,
-                        groupe: joueur.groupe,
-                        actif: joueur.actif
-                    };
+try {
+    if (isOnline && joueur.id) {
+        const tableName = getTableName();
+        console.log(`Modification dans la table: ${tableName}`);
+        
+        const updateData = {
+            nom: joueur.nom,
+            niveau: joueur.niveau,
+            poste: joueur.poste,
+            groupe: joueur.groupe,
+            actif: joueur.actif
+        };
 
-                    const { error } = await supabaseClient
-                        .from('players')
-                        .update(updateData)
-                        .eq('id', joueur.id);
-                    
-                    if (error) throw error;
-                }
-            } catch (error) {
-                console.error('Erreur synchronisation modification:', error);
-                showToast('Modification locale OK, sync échouée', true);
-            }
+        const { error } = await supabaseClient
+            .from(tableName)  // ← FIX: utilise la table spécifique au club
+            .update(updateData)
+            .eq('id', joueur.id);
+        
+        if (error) throw error;
+    }
+} catch (error) {
+    console.error('Erreur synchronisation modification:', error);
+    showToast('Modification locale OK, sync échouée', true);
+}
 
             afficherJoueurs();
             
