@@ -106,13 +106,15 @@ function afficherJoueurs() {
                     </div>
                 </div>
                 <div class="player-field">
-                    <select onchange="window.AppPlayers.modifierJoueur(${originalIndex}, 'poste', this.value)" title="Position du joueur">
-                        <option value="arriere" ${j.poste==='arriere'?'selected':''}>Arrière</option>
-                        <option value="pivot" ${j.poste==='pivot'?'selected':''}>Pivot</option>
-                        <option value="centre" ${j.poste==='centre'?'selected':''}>Centre</option>
-                        <option value="ailier" ${j.poste==='ailier'?'selected':''}>Ailier</option>
-                        <option value="indifferent" ${j.poste==='indifferent'?'selected':''}>Indifférent</option>
-                    </select>
+<select onchange="window.AppPlayers.modifierJoueur(${originalIndex}, 'poste', this.value)" title="Position du joueur">
+    <option value="indifferent" ${j.poste==='indifferent'?'selected':''}>Indifférent</option>
+    <option value="avant" ${j.poste==='avant'?'selected':''}>Avant</option>
+    <option value="arriere" ${j.poste==='arriere'?'selected':''}>Arrière</option>
+    <option value="ailier" ${j.poste==='ailier'?'selected':''}>Ailier</option>
+    <option value="centre" ${j.poste==='centre'?'selected':''}>Centre</option>
+    <option value="pivot" ${j.poste==='pivot'?'selected':''}>Pivot</option>
+    <option value="arr_centre" ${j.poste==='arr_centre'?'selected':''}>Arr. Centre</option>
+</select>
                 </div>
                 <div class="player-field">
                     <input type="number" value="${j.groupe || ''}" min="1" 
