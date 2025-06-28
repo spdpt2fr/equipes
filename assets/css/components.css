@@ -1,0 +1,36 @@
+/* COMPOSANTS UI - Hockey Subaquatique */
+
+/* === FORMULAIRES === */
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; align-items: end; margin-bottom: 16px; }
+.input-group { position: relative; display: flex; flex-direction: column; }
+.input-field { padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; background: white; transition: all 0.3s ease; outline: none; }
+.input-field:focus { border-color: #1976d2; box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1); }
+.input-label { position: absolute; left: 16px; top: 12px; font-size: 14px; color: #666; pointer-events: none; transition: all 0.3s ease; background: white; padding: 0 4px; }
+.input-field:focus + .input-label, .input-field:not(:placeholder-shown) + .input-label { top: -8px; font-size: 12px; color: #1976d2; font-weight: 500; }
+
+/* === BOUTONS === */
+.btn { padding: 12px 24px; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; outline: none; }
+.btn:focus { box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.3); }
+.btn-primary { background: #1976d2; color: white; }
+.btn-primary:hover { background: #1565c0; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3); }
+.btn-secondary { background: #388e3c; color: white; }
+.btn-secondary:hover { background: #2e7d32; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(56, 142, 60, 0.3); }
+.btn-warning { background: #ff9800; color: white; }
+.btn-warning:hover { background: #f57c00; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3); }
+.btn-danger { background: #d32f2f; color: white; padding: 8px; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; }
+.btn-danger:hover { background: #c62828; transform: scale(1.1); }
+.file-input-wrapper { position: relative; overflow: hidden; display: inline-block; }
+.file-input-wrapper input[type=file] { position: absolute; left: -9999px; }
+.actions-grid { display: flex; gap: 12px; flex-wrap: wrap; }
+
+/* === SÉLECTEUR DE CLUBS === */
+.club-selector { background: linear-gradient(135deg, #0077be 0%, #00a8cc 100%); color: white; padding: 16px 24px; border-radius: 12px; display: flex; align-items: center; gap: 16px; box-shadow: 0 4px 12px rgba(0, 119, 190, 0.3); margin-bottom: 8px;}
+.club-selector select { background: rgba(255, 255, 255, 0.9); border: none; padding: 8px 12px; border-radius: 6px; font-weight: 500; font-size: 16px; color: #333; cursor: pointer; min-width: 200px;}
+.club-selector .club-info { margin-left: auto; font-size: 14px; opacity: 0.9; }
+.club-title { font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+
+/* === MINI-DRAPEAUX CSS === */
+.flag { display: inline-block; width: 20px; height: 12px; margin-right: 6px; border: 1px solid #ccc; border-radius: 2px; position: relative; vertical-align: middle; }
+.flag-fr { background: linear-gradient(to right, #002654 0%, #002654 33%, #FFFFFF 33%, #FFFFFF 66%, #ED2939 66%); }
+.flag-gb { background: #012169; background-image: linear-gradient(45deg, transparent 30%, white 30%, white 35%, transparent 35%), linear-gradient(-45deg, transparent 30%, white 30%, white 35%, transparent 35%), linear-gradient(45deg, transparent 65%, white 65%, white 70%, transparent 70%), linear-gradient(-45deg, transparent 65%, white 65%, white 70%, transparent 70%); }
+.flag-gb::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: linear-gradient(to right, transparent 45%, #C8102E 45%, #C8102E 55%, transparent 55%), linear-gradient(to bottom, transparent 45%, #C8102E 45%, #C8102E 55%, transparent 55%); }
