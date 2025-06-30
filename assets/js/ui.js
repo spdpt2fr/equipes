@@ -146,18 +146,17 @@ function attachEventListeners() {
         console.log('✅ Event listener club attaché');
     }
 
-    // Formulaire d'ajout de joueur
-// Bouton d'ajout de joueur
-const ajouterBtn = document.getElementById('ajouterBtn');
-if (ajouterBtn) {
-    ajouterBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        if (window.AppPlayers && window.AppPlayers.ajouterJoueur) {
-            window.AppPlayers.ajouterJoueur();
-        }
-    });
-    console.log('✅ Event listener ajout attaché');
-}
+    // Bouton d'ajout de joueur
+    const ajouterBtn = document.getElementById('ajouterBtn');
+    if (ajouterBtn) {
+        ajouterBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (window.AppPlayers && window.AppPlayers.ajouterJoueur) {
+                window.AppPlayers.ajouterJoueur();
+            }
+        });
+        console.log('✅ Event listener ajout attaché');
+    }
 
     // Bouton de recherche
     const searchInput = document.getElementById('searchInput');
@@ -167,21 +166,21 @@ if (ajouterBtn) {
     }
 
     // Bouton effacer recherche
-    const clearSearchBtn = document.getElementById('clearSearchBtn');
+    const clearSearchBtn = document.getElementById('clearSearch');
     if (clearSearchBtn) {
         clearSearchBtn.addEventListener('click', effacerRecherche);
         console.log('✅ Event listener effacer recherche attaché');
     }
 
     // Bouton tri
-    const sortBtn = document.getElementById('sortBtn');
+    const sortBtn = document.getElementById('sortToggle');
     if (sortBtn) {
         sortBtn.addEventListener('click', toggleTriJoueurs);
         console.log('✅ Event listener tri attaché');
     }
 
-    // Bouton créer équipes
-    const createTeamsBtn = document.getElementById('createTeamsBtn');
+    // Bouton créer équipes (ID CORRIGÉ : creerBtn)
+    const createTeamsBtn = document.getElementById('creerBtn');
     if (createTeamsBtn) {
         createTeamsBtn.addEventListener('click', function() {
             if (window.AppTeams && window.AppTeams.creerEquipes) {
@@ -189,6 +188,42 @@ if (ajouterBtn) {
             }
         });
         console.log('✅ Event listener créer équipes attaché');
+    } else {
+        console.error('❌ Element creerBtn non trouvé !');
+    }
+
+    // Bouton export
+    const exportBtn = document.getElementById('exportBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', function() {
+            if (window.AppPlayers && window.AppPlayers.exporterJoueurs) {
+                window.AppPlayers.exporterJoueurs();
+            }
+        });
+        console.log('✅ Event listener export attaché');
+    }
+
+    // Bouton sync
+    const syncBtn = document.getElementById('syncBtn');
+    if (syncBtn) {
+        syncBtn.addEventListener('click', function() {
+            if (window.AppStorage && window.AppStorage.chargerJoueurs) {
+                window.AppStorage.chargerJoueurs();
+                window.AppCore.showToast('Synchronisation effectuée');
+            }
+        });
+        console.log('✅ Event listener sync attaché');
+    }
+
+    // Import de fichier
+    const fichierJoueurs = document.getElementById('fichierJoueurs');
+    if (fichierJoueurs) {
+        fichierJoueurs.addEventListener('change', function() {
+            if (window.AppPlayers && window.AppPlayers.importerJoueurs) {
+                window.AppPlayers.importerJoueurs();
+            }
+        });
+        console.log('✅ Event listener import attaché');
     }
 
     console.log('🎉 Tous les event listeners attachés avec succès!');
