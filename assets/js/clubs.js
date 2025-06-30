@@ -4,17 +4,41 @@
 // ===================================================================
 
 // === CHANGEMENT DE CLUB ===
-function changerClub() {
-    const selectClub = document.getElementById('clubSelect');
-    const nomClub = selectClub.value;
-    window.AppCore.clubActuel = window.AppCore.clubs.find(c => c.nom.toLowerCase() === nomClub);
-    
-    window.AppStorage.sauvegarderClub(nomClub);
-    
-    // Recharger les joueurs pour le nouveau club
-    window.AppStorage.chargerJoueurs();
-    
-    window.AppCore.showToast(`Basculé vers le club ${window.AppCore.clubActuel.nom}`);
+async function changerClub(nomClub) {
+    try {
+        // Si pas de paramètre, récupérer depuis le select
+        if (!nomClub) {
+            const selectClub = document.getElementById('clubSelect');
+            nomClub = selectClub.value;
+        }
+        
+        window.AppCore.clubActuel = window.AppCore.clubs.find(c => c.nom.toLowerCase() === nomClub);
+        
+        if (!window.AppCore.clubActuel) {
+            throw new Error(`Club "${nomClub}" non trouvé`);
+        }
+        
+        window.AppStorage.sauvegarderClub(nomClub);
+        
+        // Recharger les joueurs pour le nouveau club
+        await window.AppStorage.chargerJoueurs();
+        
+        // Rafraîchir l'affichage automatiquement
+        if (window.afficherJoueurs) {
+            window.afficherJoueurs();
+        }
+        
+        // Mettre à jour le statut
+        window.AppCore.updateStatus(`🟢 Connecté (${window.AppCore.joueurs.length} joueurs - ${window.AppCore.clubActuel.nom})`, 'connected');
+        
+        window.AppCore.showToast(`Basculé vers le club ${window.AppCore.clubActuel.nom}`);
+        
+        console.log(`✅ Club changé vers: ${window.AppCore.clubActuel.nom} (${window.AppCore.joueurs.length} joueurs)`);
+        
+    } catch (error) {
+        console.error('Erreur changement club:', error);
+        window.AppCore.showToast('Erreur lors du changement de club: ' + error.message, true);
+    }
 }
 
 // === INITIALISATION COMPLÈTE ===
