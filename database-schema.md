@@ -81,3 +81,31 @@ CREATE POLICY "Allow delete access to all users" ON players
 - Le niveau est contraint entre 1 et 10
 - Le poste doit être une des trois valeurs autorisées
 - La colonne `updated_at` est mise à jour automatiquement
+
+## Table : licenses
+
+```sql
+CREATE TABLE licenses (
+  id SERIAL PRIMARY KEY,
+  software VARCHAR(255) NOT NULL,
+  vendor VARCHAR(255),
+  version VARCHAR(100),
+  type VARCHAR(50),
+  quantity INTEGER,
+  purchaseDate DATE,
+  expirationDate DATE,
+  renewalDate DATE,
+  initialCost NUMERIC,
+  renewalCost NUMERIC,
+  contacts TEXT,
+  assignedTo TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE licenses ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow full access" ON licenses
+    FOR ALL USING (true) WITH CHECK (true);
+```
+
+Cette table stocke toutes les licences logicielles gérées par l'application.

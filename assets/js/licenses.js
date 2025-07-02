@@ -1,14 +1,19 @@
 (function() {
+    const SUPABASE_URL = 'https://wwonmuezjfvtfjjnxczx.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3b25tdWV6amZ2dGZqam54Y3p4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5NDUxMTQsImV4cCI6MjA2NjUyMTExNH0.P4TY4lyr0aXavzz8tJlZJFb0v2sDFMZstIFH2vvipnw';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
     let licenses = [];
     let editingIndex = null;
 
-    function load() {
-        const saved = localStorage.getItem('licenses');
-        licenses = saved ? JSON.parse(saved) : [];
-    }
-
-    function save() {
-        localStorage.setItem('licenses', JSON.stringify(licenses));
+    async function load() {
+        const { data, error } = await supabaseClient.from('licenses').select('*');
+        if (error) {
+            console.error('Erreur chargement licences:', error);
+            licenses = [];
+        } else {
+            licenses = data || [];
+        }
     }
 
     function daysUntil(dateStr) {
@@ -87,7 +92,7 @@
         editingIndex = null;
     }
 
-    function handleSubmit(e) {
+    async function handleSubmit(e) {
         e.preventDefault();
         const lic = {
             software: document.getElementById('softwareName').value.trim(),
@@ -104,17 +109,34 @@
             assignedTo: document.getElementById('assignedTo').value.trim()
         };
         if (editingIndex !== null) {
-            licenses[editingIndex] = lic;
+            const id = licenses[editingIndex].id;
+            const { error } = await supabaseClient
+                .from('licenses')
+                .update(lic)
+                .eq('id', id);
+            if (!error) {
+                licenses[editingIndex] = { id, ...lic };
+            } else {
+                console.error('Erreur maj licence:', error);
+            }
         } else {
-            licenses.push(lic);
+            const { data, error } = await supabaseClient
+                .from('licenses')
+                .insert([lic])
+                .select();
+            if (!error && data && data[0]) {
+                lic.id = data[0].id;
+                licenses.push(lic);
+            } else {
+                console.error('Erreur ajout licence:', error);
+            }
         }
-        save();
         clearForm();
         renderDashboard();
         renderList();
     }
 
-    function handleActions(e) {
+    async function handleActions(e) {
         const edit = e.target.closest('[data-edit]');
         if (edit) {
             editingIndex = parseInt(edit.getAttribute('data-edit'));
@@ -125,16 +147,24 @@
         if (del) {
             const idx = parseInt(del.getAttribute('data-del'));
             if (confirm('Supprimer cette licence ?')) {
-                licenses.splice(idx, 1);
-                save();
-                renderDashboard();
-                renderList();
+                const id = licenses[idx].id;
+                const { error } = await supabaseClient
+                    .from('licenses')
+                    .delete()
+                    .eq('id', id);
+                if (!error) {
+                    licenses.splice(idx, 1);
+                    renderDashboard();
+                    renderList();
+                } else {
+                    console.error('Erreur suppression licence:', error);
+                }
             }
         }
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        load();
+    document.addEventListener('DOMContentLoaded', async () => {
+        await load();
         renderDashboard();
         renderList();
         document.getElementById('licenseForm').addEventListener('submit', handleSubmit);
