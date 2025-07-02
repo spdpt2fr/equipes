@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionnaire de Licences</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
+    <link rel="stylesheet" href="assets/css/licenses.css">
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1 class="card-title">Gestionnaire de Licences</h1>
+            <div id="dashboard" class="dashboard"></div>
+        </div>
+
+        <div class="card">
+            <h2 class="card-title">Ajouter / Modifier Licence</h2>
+            <form id="licenseForm" class="form-grid">
+                <div class="input-group">
+                    <input id="softwareName" class="input-field" required placeholder=" ">
+                    <label class="input-label" for="softwareName">Nom logiciel</label>
+                </div>
+                <div class="input-group">
+                    <input id="vendor" class="input-field" required placeholder=" ">
+                    <label class="input-label" for="vendor">Éditeur</label>
+                </div>
+                <div class="input-group">
+                    <input id="version" class="input-field" placeholder=" ">
+                    <label class="input-label" for="version">Version</label>
+                </div>
+                <div class="input-group">
+                    <select id="licenseType" class="input-field">
+                        <option value="perpetuelle">Perpétuelle</option>
+                        <option value="abonnement">Abonnement</option>
+                        <option value="utilisateur">Par utilisateur</option>
+                    </select>
+                    <label class="input-label" for="licenseType">Type</label>
+                </div>
+                <div class="input-group">
+                    <input type="number" id="quantity" class="input-field" min="1" placeholder=" ">
+                    <label class="input-label" for="quantity">Quantité</label>
+                </div>
+                <div class="input-group">
+                    <input type="date" id="purchaseDate" class="input-field">
+                    <label class="input-label" for="purchaseDate">Achat</label>
+                </div>
+                <div class="input-group">
+                    <input type="date" id="expirationDate" class="input-field">
+                    <label class="input-label" for="expirationDate">Expiration</label>
+                </div>
+                <div class="input-group">
+                    <input type="date" id="renewalDate" class="input-field">
+                    <label class="input-label" for="renewalDate">Renouvellement</label>
+                </div>
+                <div class="input-group">
+                    <input type="number" id="initialCost" class="input-field" step="0.01" placeholder=" ">
+                    <label class="input-label" for="initialCost">Coût initial</label>
+                </div>
+                <div class="input-group">
+                    <input type="number" id="renewalCost" class="input-field" step="0.01" placeholder=" ">
+                    <label class="input-label" for="renewalCost">Coût renouvellement</label>
+                </div>
+                <div class="input-group">
+                    <input id="contacts" class="input-field" placeholder=" ">
+                    <label class="input-label" for="contacts">Contacts (comm., support)</label>
+                </div>
+                <div class="input-group">
+                    <input id="assignedTo" class="input-field" placeholder=" ">
+                    <label class="input-label" for="assignedTo">Utilisateurs/Départements</label>
+                </div>
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <div class="actions-grid">
+                <input type="text" id="searchInputLic" class="input-field" placeholder="Rechercher...">
+                <button id="filterExpiring" class="btn btn-warning">Expirant bientôt</button>
+            </div>
+            <div id="licensesList" class="license-list"></div>
+        </div>
+    </div>
+
+    <script src="assets/js/licenses.js"></script>
+</body>
+</html>
