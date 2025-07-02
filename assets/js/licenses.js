@@ -1,6 +1,6 @@
 (function() {
-    const SUPABASE_URL = 'https://wwonmuezjfvtfjjnxczx.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3b25tdWV6amZ2dGZqam54Y3p4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5NDUxMTQsImV4cCI6MjA2NjUyMTExNH0.P4TY4lyr0aXavzz8tJlZJFb0v2sDFMZstIFH2vvipnw';
+    const SUPABASE_URL = 'https://qsbdzyhxppdbtsikhozp.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFzYmR6eWh4cHBkYnRzaWtob3pwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NzI5OTYsImV4cCI6MjA2NzA0ODk5Nn0.kanu7GfIr-qDtd3wcSmDbjEMK9VYX4o9HdG4cD0rcus';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let licenses = [];

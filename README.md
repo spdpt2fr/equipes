@@ -16,10 +16,14 @@ Application web de gestion et création d'équipes équilibrées avec synchronis
 
 ### 1. Configuration Supabase
 
-Remplacez dans `index.html` :
+L'application est préconfigurée pour utiliser le projet Supabase
+[`qsbdzyhxppdbtsikhozp`](https://supabase.com/dashboard/project/qsbdzyhxppdbtsikhozp).
+Les identifiants se trouvent dans `assets/js/core.js` et `assets/js/licenses.js` :
+
 ```javascript
-const SUPABASE_URL = 'YOUR_SUPABASE_URL'
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'
+const SUPABASE_URL = 'https://qsbdzyhxppdbtsikhozp.supabase.co'
+const SUPABASE_ANON_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFzYmR6eWh4cHBkYnRzaWtob3pwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NzI5OTYsImV4cCI6MjA2NzA0ODk5Nn0.kanu7GfIr-qDtd3wcSmDbjEMK9VYX4o9HdG4cD0rcus'
 ```
 
 ### 2. Structure de base de données
