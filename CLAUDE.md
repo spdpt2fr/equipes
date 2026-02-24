@@ -18,7 +18,7 @@ index.html                  Entry point, layout, script loading order
 assets/
   css/
     main.css                Base styles, layout, status bar, toasts
-    components.css          Cards, buttons, inputs, player cards, team cards
+    components.css          Cards, buttons, inputs, player cards, team cards, sessions
     responsive.css          Mobile breakpoints
   js/
     core.js                 Global state + config + utility functions → window.AppCore
@@ -27,6 +27,7 @@ assets/
     players.js              Player CRUD (add/edit/delete), CSV import/export → window.AppPlayers
     ui.js                   Player list rendering, search/sort, event listeners → window.AppUI
     teams.js                Team creation algorithm, team display → window.AppTeams
+    sessions.js             Session validation, match results, score evolution → window.AppSessions
 database-schema.md          Full SQL schema for Supabase setup
 README.md                   Setup and deployment instructions
 ```
@@ -47,6 +48,7 @@ All JS is loaded as plain `<script>` tags in `index.html`. There is no ES module
 | `window.AppPlayers` | `players.js` | `ajouterJoueur()`, `supprimerJoueur()`, `modifierJoueur()`, `exporterJoueurs()`, `importerJoueurs()` |
 | `window.AppUI` | `ui.js` | `afficherJoueurs()`, `attachEventListeners()`, sort/search/filter helpers |
 | `window.AppTeams` | `teams.js` | `creerEquipes()`, `afficherEquipes()`, `changerEquipe()` |
+| `window.AppSessions` | `sessions.js` | `validerSession()`, `sauvegarderResultats()`, `appliquerAjustements()`, `chargerHistorique()` |
 
 **Compatibility aliases** (set at the bottom of some files):
 - `window.afficherJoueurs = afficherJoueurs` (ui.js)
@@ -71,6 +73,8 @@ All JS is loaded as plain `<script>` tags in `index.html`. There is no ES module
 | `triJoueurs` | string | `'alpha'` or `'niveau'` |
 | `triEquipes` | string | `'alpha'` or `'niveau'` |
 | `searchTerm` | string | Current player list search filter |
+| `sessionValidee` | object/null | Current validated session `{ id, teamIds }` or null |
+| `historiqueSessions` | array | Loaded past sessions for active club |
 
 ---
 
@@ -101,6 +105,12 @@ RLS is enabled with open anonymous policies (read/insert/update/delete for all).
 
 Table routing in `storage.js`: `getTableName()` returns `'players_grenoble'` or `'players_jeeves'` based on `window.AppCore.clubActuel.nom`.
 
+**Session tables** (shared across clubs, filtered by `club_id`):
+- `sessions` — one row per game night (`id`, `club_id`, `date_session`, `nb_equipes`, `resultats_saisis`, `ajustements_appliques`)
+- `session_teams` — teams within a session (`id`, `session_id`, `numero_equipe`, `niveau_total`)
+- `session_players` — player snapshot per team (`id`, `session_team_id`, `player_id`, `player_name`, `niveau`, `poste`)
+- `match_results` — match outcomes (`id`, `session_id`, `equipe1_id`, `equipe2_id`, `gagnant_id`)
+
 ---
 
 ## Initialization flow
@@ -125,7 +135,22 @@ If `init()` fails, `isOnline = false` and the app runs in offline mode (player I
 
 ---
 
-## Key behaviours to be aware of
+## Session / match results flow (sessions.js)
+
+1. User generates teams via `creerEquipes()`.
+2. A **“Valider cette soirée”** button appears below the teams.
+3. On click → `validerSession()` saves session + teams + players to Supabase.
+4. A **match results UI** appears with all team pairings (radio: Team A wins / Team B wins / Not played).
+5. User saves results → `sauvegarderResultats()` stores `match_results` rows.
+6. **Score adjustments** are computed and proposed:
+   - Base delta per match: ±0.15
+   - Win vs stronger team → bigger bonus; loss vs weaker team → bigger penalty
+   - Formula: `delta = 0.15 × (1 + (opp_avg − team_avg) / 10)` for wins
+   - Deltas summed across all matches, then `round(current + total_delta)` clamped 1–10
+7. User can **apply** or **ignore** proposed adjustments. Applied adjustments update player levels in DB.
+8. **History** section shows the last 10 sessions with teams, results, and action buttons.
+
+---
 
 - **Club persistence**: last selected club is stored in `localStorage` under key `hockeySub_clubActuel`.
 - **Inline editing**: player fields in the list are `<input>` elements. Changes trigger `modifierJoueur()` on `change`/`blur`, which syncs to Supabase immediately.

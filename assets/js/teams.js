@@ -10,7 +10,10 @@ function creerEquipes() {
         window.AppCore.showToast('Nombre d\'équipes invalide', true);
         return;
     }
-
+    // Reset la validation de session précédente
+    window.AppCore.sessionValidee = null;
+    const resultatsContainer = document.getElementById('resultatsContainer');
+    if (resultatsContainer) resultatsContainer.innerHTML = '';
     const joueursActifs = window.AppCore.joueurs.filter(j => j.actif);
     if (joueursActifs.length === 0) {
         window.AppCore.showToast('Aucun joueur actif disponible', true);
@@ -22,7 +25,12 @@ function creerEquipes() {
         niveauTotal: 0,
         meilleurNiveau: 0,
         avant: 0,
-        arriere: 0
+        arriere: 0,
+        ailier: 0,
+        centre: 0,
+        pivot: 0,
+        arr_centre: 0,
+        indifferent: 0
     }));
 
     const groupes = {};
@@ -190,7 +198,27 @@ function afficherEquipes() {
         });
     });
 
-    html += '</div></div>';
+    html += '</div>';
+
+    // Bouton de validation de la soirée
+    if (!window.AppCore.sessionValidee) {
+        html += `
+            <div style="text-align: center; margin-top: 20px;">
+                <button onclick="window.AppSessions.validerSession()" class="btn btn-primary" style="font-size: 16px; padding: 14px 32px;">
+                    <span class="material-icons">check_circle</span>
+                    \u2705 Valider cette soir\u00e9e
+                </button>
+            </div>
+        `;
+    } else {
+        html += `
+            <div style="text-align: center; margin-top: 20px;">
+                <span class="badge badge-success" style="font-size: 16px; padding: 10px 20px;">\u2705 Soir\u00e9e valid\u00e9e</span>
+            </div>
+        `;
+    }
+
+    html += '</div>'; // ferme .card
     container.innerHTML = html;
 }
 
@@ -206,6 +234,14 @@ function changerEquipe(equipeIdx, joueurIdx) {
         window.AppCore.equipes.forEach(e => {
             e.niveauTotal = e.joueurs.reduce((acc, j) => acc + j.niveau, 0);
         });
+
+        // Invalidation : composition modifiée, session plus cohérente
+        if (window.AppCore.sessionValidee) {
+            window.AppCore.sessionValidee = null;
+            window.AppCore.showToast('⚠️ Session invalidée (composition modifiée)');
+            const resultatsContainer = document.getElementById('resultatsContainer');
+            if (resultatsContainer) resultatsContainer.innerHTML = '';
+        }
 
         afficherEquipes();
         window.AppCore.showToast('Joueur déplacé avec succès');

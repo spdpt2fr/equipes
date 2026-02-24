@@ -17,6 +17,8 @@ let afficherTotal = true;
 let triJoueurs = 'alpha'; // Par défaut alphabétique
 let triEquipes = 'alpha'; // Tri pour les équipes
 let searchTerm = '';
+let sessionValidee = null;
+let historiqueSessions = [];
 
 // === FONCTIONS UTILITAIRES ===
 function updateStatus(message, className) {
@@ -53,6 +55,8 @@ window.AppCore = {
     triJoueurs,
     triEquipes,
     searchTerm,
+    sessionValidee,
+    historiqueSessions,
     updateStatus,
     showToast
 };

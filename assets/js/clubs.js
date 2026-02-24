@@ -26,8 +26,11 @@ async function changerClub(nomClub) {
         // Rafraîchir l'affichage automatiquement
         if (window.afficherJoueurs) {
             window.afficherJoueurs();
-        }
-        
+        }        
+        // Charger l'historique du nouveau club
+        if (window.AppSessions && window.AppSessions.chargerHistorique) {
+            window.AppSessions.chargerHistorique();
+        }        
         // Mettre à jour le statut
         window.AppCore.updateStatus(`🟢 Connecté (${window.AppCore.joueurs.length} joueurs - ${window.AppCore.clubActuel.nom})`, 'connected');
         
@@ -63,8 +66,11 @@ async function init() {
         console.log('Connexion OK, joueurs chargés:', window.AppCore.joueurs.length);
         
         if (window.afficherJoueurs) window.afficherJoueurs();
-        window.AppCore.showToast(`Connexion réussie ! Club: ${window.AppCore.clubActuel.nom}`);
-        
+        window.AppCore.showToast(`Connexion réussie ! Club: ${window.AppCore.clubActuel.nom}`);        
+        // Charger l'historique des soir\u00e9es
+        if (window.AppSessions && window.AppSessions.chargerHistorique) {
+            window.AppSessions.chargerHistorique();
+        }        
     } catch (error) {
         console.error('Erreur connexion:', error);
         window.AppCore.isOnline = false;

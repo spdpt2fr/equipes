@@ -34,3 +34,58 @@
 .flag-fr { background: linear-gradient(to right, #002654 0%, #002654 33%, #FFFFFF 33%, #FFFFFF 66%, #ED2939 66%); }
 .flag-gb { background: #012169; background-image: linear-gradient(45deg, transparent 30%, white 30%, white 35%, transparent 35%), linear-gradient(-45deg, transparent 30%, white 30%, white 35%, transparent 35%), linear-gradient(45deg, transparent 65%, white 65%, white 70%, transparent 70%), linear-gradient(-45deg, transparent 65%, white 65%, white 70%, transparent 70%); }
 .flag-gb::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: linear-gradient(to right, transparent 45%, #C8102E 45%, #C8102E 55%, transparent 55%), linear-gradient(to bottom, transparent 45%, #C8102E 45%, #C8102E 55%, transparent 55%); }
+
+/* === SESSIONS / HISTORIQUE === */
+.session-card { background: #f8f9fa; border-radius: 10px; padding: 16px; margin-bottom: 12px; border-left: 4px solid #1976d2; transition: box-shadow 0.2s; }
+.session-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.session-header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.session-date { font-weight: 600; font-size: 15px; text-transform: capitalize; }
+.session-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+.session-teams-list { margin: 8px 0; }
+.session-team-row { padding: 6px 0; font-size: 14px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid #e8e8e8; }
+.session-team-row:last-child { border-bottom: none; }
+.session-record { background: #1976d2; color: white; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+.session-total { color: #888; font-size: 12px; }
+.session-players-list { color: #555; font-size: 13px; }
+.session-player { white-space: nowrap; }
+.session-player sup { color: #1976d2; font-weight: 600; }
+.session-results { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.session-actions { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
+
+/* Badges */
+.badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; background: #e0e0e0; color: #555; }
+.badge-success { background: #c8e6c9; color: #2e7d32; }
+.badge-pending { background: #fff3e0; color: #e65100; }
+
+/* Result pills */
+.result-pill { display: inline-block; background: #e3f2fd; color: #1565c0; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+
+/* === RÉSULTATS MATCHS === */
+.results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.match-card { background: #f0f4f8; border-radius: 10px; padding: 16px; border: 2px solid #e0e0e0; transition: border-color 0.3s; }
+.match-card:hover { border-color: #1976d2; }
+.match-title { font-weight: 600; font-size: 15px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.match-options { display: flex; flex-direction: column; gap: 8px; }
+.match-option { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px 12px; border-radius: 8px; transition: background 0.2s; }
+.match-option:hover { background: rgba(25,118,210,0.08); }
+.match-option input[type="radio"] { accent-color: #1976d2; width: 18px; height: 18px; }
+.match-label { font-size: 14px; font-weight: 500; }
+.match-label.win { color: #2e7d32; }
+.match-label.skip { color: #888; }
+
+/* === AJUSTEMENTS === */
+.ajustements-info { color: #666; font-size: 13px; margin-bottom: 12px; font-style: italic; }
+.ajustements-list { display: flex; flex-direction: column; gap: 4px; }
+.ajustement-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; border-radius: 8px; font-size: 14px; }
+.ajustement-row.delta-positive { background: #e8f5e9; }
+.ajustement-row.delta-negative { background: #fce4ec; }
+.ajustement-row.delta-neutral { background: #f5f5f5; }
+.ajustement-nom { font-weight: 600; }
+.ajustement-detail { display: flex; align-items: center; gap: 8px; }
+.ajustement-delta { font-size: 12px; color: #888; }
+.ajustement-separator { text-align: center; color: #999; font-size: 12px; margin: 10px 0 4px; text-transform: uppercase; letter-spacing: 1px; }
+
+/* Boutons petits */
+.btn-sm { padding: 6px 14px; font-size: 12px; }
+.btn-danger-outline { background: transparent; color: #d32f2f; border: 1px solid #d32f2f; padding: 6px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; transition: all 0.2s; }
+.btn-danger-outline:hover { background: #d32f2f; color: white; }
