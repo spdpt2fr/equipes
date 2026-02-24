@@ -60,7 +60,7 @@ CREATE POLICY "Allow delete access to all users" ON players
 |---------|------|-------------|
 | `id` | SERIAL | Identifiant unique auto-incrémenté |
 | `nom` | VARCHAR(255) | Nom du joueur (unique) |
-| `niveau` | INTEGER | Niveau du joueur (1-10) |
+| `niveau` | NUMERIC(3,1) | Niveau du joueur (1.0–10.0) |
 | `poste` | VARCHAR(50) | Poste : 'avant', 'arriere', 'indifferent' |
 | `groupe` | INTEGER | Numéro de groupe (optionnel) |
 | `actif` | BOOLEAN | Statut actif/inactif |

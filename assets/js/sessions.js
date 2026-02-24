@@ -30,7 +30,7 @@ async function validerSession() {
             .from('sessions')
             .insert([{
                 club_id: window.AppCore.clubActuel.id,
-                date_session: new Date().toISOString().split('T')[0],
+                date_session: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD en heure locale
                 nb_equipes: window.AppCore.equipes.length
             }])
             .select()
@@ -283,7 +283,7 @@ async function calculerAjustements(sessionId) {
                 if (matchsJoues === 0) return;
 
                 const niveauActuel = player.niveau;
-                const nouveauNiveau = Math.max(1, Math.min(10, Math.round(niveauActuel + totalDelta)));
+                const nouveauNiveau = Math.max(1, Math.min(10, Math.round((niveauActuel + totalDelta) * 10) / 10));
 
                 ajustements[player.player_id] = {
                     player_id: player.player_id,
@@ -310,10 +310,10 @@ function afficherAjustements(sessionId, ajustements) {
     if (!container) return;
 
     if (ajustements.length === 0) {
-        container.innerHTML += `
+        container.insertAdjacentHTML('beforeend', `
             <div class="card" style="margin-top: 16px;">
                 <p style="text-align: center; color: #666;">Aucun ajustement à proposer pour cette soirée.</p>
-            </div>`;
+            </div>`);
         return;
     }
 
@@ -383,7 +383,7 @@ function afficherAjustements(sessionId, ajustements) {
         </div>
     `;
 
-    container.innerHTML += html;
+    container.insertAdjacentHTML('beforeend', html);
 }
 
 // === APPLIQUER LES AJUSTEMENTS AUX JOUEURS ===
@@ -397,7 +397,7 @@ async function appliquerAjustements(sessionId) {
             // Utiliser le niveau actuel du joueur (pas le snapshot)
             const joueurLocal = window.AppCore.joueurs.find(j => j.id === a.player_id);
             const niveauActuelReel = joueurLocal ? joueurLocal.niveau : a.niveauActuel;
-            const nouveauNiveau = Math.max(1, Math.min(10, Math.round(niveauActuelReel + a.delta)));
+            const nouveauNiveau = Math.max(1, Math.min(10, Math.round((niveauActuelReel + a.delta) * 10) / 10));
 
             if (nouveauNiveau === niveauActuelReel) continue;
 

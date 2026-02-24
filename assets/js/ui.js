@@ -94,13 +94,12 @@ function afficherJoueurs() {
                 <div class="player-field">
                     <input type="text" value="${j.nom}" class="player-name-input" 
                            onchange="window.AppPlayers.modifierJoueur(${originalIndex}, 'nom', this.value)"
-                           onblur="window.AppPlayers.modifierJoueur(${originalIndex}, 'nom', this.value)"
                            placeholder="Nom du joueur">
                 </div>
                 <div class="player-field">
                     <div class="niveau-wrapper">
                         <span class="niveau-label">Niv.</span>
-                        <input type="number" value="${j.niveau}" min="1" max="10" 
+                        <input type="number" value="${j.niveau}" min="1" max="10" step="0.1" 
                                onchange="window.AppPlayers.modifierJoueur(${originalIndex}, 'niveau', this.value)"
                                placeholder="1-10" title="Niveau de 1 à 10">
                     </div>
@@ -206,9 +205,12 @@ function attachEventListeners() {
     // Bouton sync
     const syncBtn = document.getElementById('syncBtn');
     if (syncBtn) {
-        syncBtn.addEventListener('click', function() {
-            if (window.AppStorage && window.AppStorage.chargerJoueurs) {
-                window.AppStorage.chargerJoueurs();
+        syncBtn.addEventListener('click', async function() {
+            if (window.AppStorage && window.AppStorage.synchroniser) {
+                await window.AppStorage.synchroniser();
+            } else if (window.AppStorage && window.AppStorage.chargerJoueurs) {
+                await window.AppStorage.chargerJoueurs();
+                if (window.afficherJoueurs) window.afficherJoueurs();
                 window.AppCore.showToast('Synchronisation effectuée');
             }
         });

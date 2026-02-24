@@ -6,7 +6,7 @@
 // === AJOUTER JOUEUR ===
 async function ajouterJoueur() {
     const nom = document.getElementById('nom').value.trim();
-    const niveau = parseInt(document.getElementById('niveau').value);
+    const niveau = parseFloat(document.getElementById('niveau').value);
     const poste = document.getElementById('poste').value;
     const groupe = parseInt(document.getElementById('groupe').value) || null;
 
@@ -117,8 +117,8 @@ async function modifierJoueur(index, champ, valeur) {
         joueur[champ] = nouveauNom;
         window.AppCore.showToast(`Nom modifié : ${ancienneValeur} → ${nouveauNom}`);
     } else if (champ === 'niveau') {
-        const niveau = parseInt(valeur);
-        if (niveau < 1 || niveau > 10) {
+        const niveau = parseFloat(valeur);
+        if (isNaN(niveau) || niveau < 1 || niveau > 10) {
             window.AppCore.showToast('Le niveau doit être entre 1 et 10', true);
             if (window.afficherJoueurs) window.afficherJoueurs();
             return;
@@ -216,6 +216,9 @@ async function importerJoueurs() {
             const cleanLine = ligne.replace(/^\uFEFF/, '').trim();
             if (!cleanLine) continue;
 
+            // Sauter la ligne d'en-tête CSV
+            if (cleanLine.toLowerCase().startsWith('nom,') || cleanLine.toLowerCase().startsWith('nom;')) continue;
+
             const sep = cleanLine.includes(';') ? ';' : ',';
             const [nom, niveauStr, posteStr] = cleanLine.split(sep).map(x => x.trim());
 
@@ -226,7 +229,7 @@ async function importerJoueurs() {
                 continue;
             }
             
-            const niveau = parseInt(niveauStr);
+            const niveau = parseFloat(niveauStr);
             const posteRaw = (posteStr || "").toLowerCase().trim();
             const posteNormalise = posteRaw
                 .normalize('NFD')
