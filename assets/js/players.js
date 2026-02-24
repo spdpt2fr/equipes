@@ -179,7 +179,11 @@ function exporterJoueurs() {
         return;
     }
 
-    const contenu = window.AppCore.joueurs.map(j => `${j.nom},${j.niveau},${j.poste}`).join('\n');
+    const header = 'nom,niveau,poste,groupe,actif';
+    const contenu = [
+        header,
+        ...window.AppCore.joueurs.map(j => `${j.nom},${j.niveau},${j.poste},${j.groupe ?? ''},${j.actif ? 'true' : 'false'}`)
+    ].join('\n');
     const blob = new Blob([contenu], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
 
@@ -223,8 +227,34 @@ async function importerJoueurs() {
             }
             
             const niveau = parseInt(niveauStr);
-            const poste = (posteStr || "").toLowerCase();
-            const posteValide = ["avant", "arriere"].includes(poste) ? poste : "indifferent";
+            const posteRaw = (posteStr || "").toLowerCase().trim();
+            const posteNormalise = posteRaw
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/\s+/g, '_');
+            const aliasPoste = {
+                'arriere': 'arriere',
+                'arriere_def': 'arriere',
+                'defenseur': 'arriere',
+                'defense': 'arriere',
+                'avant': 'avant',
+                'attaque': 'avant',
+                'attaquant': 'avant',
+                'ailier': 'ailier',
+                'wing': 'ailier',
+                'centre': 'centre',
+                'center': 'centre',
+                'pivot': 'pivot',
+                'piv': 'pivot',
+                'arr_centre': 'arr_centre',
+                'arrcentre': 'arr_centre',
+                'arriere_centre': 'arr_centre',
+                'arrierecentre': 'arr_centre',
+                'indifferent': 'indifferent',
+                'polyvalent': 'indifferent',
+                '': 'indifferent'
+            };
+            const posteValide = aliasPoste[posteNormalise] || 'indifferent';
             const niveauValide = (niveau >= 1 && niveau <= 10) ? niveau : 5;
 
             const nouveauJoueur = { nom, niveau: niveauValide, poste: posteValide, actif: true };
