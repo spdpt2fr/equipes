@@ -4,9 +4,8 @@
 // ===================================================================
 
 // === CONFIGURATION SUPABASE ===
-const SUPABASE_URL = 'https://wwonmuezjfvtfjjnxczx.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3b25tdWV6amZ2dGZqam54Y3p4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5NDUxMTQsImV4cCI6MjA2NjUyMTExNH0.P4TY4lyr0aXavzz8tJlZJFb0v2sDFMZstIFH2vvipnw';
-
+const SUPABASE_URL = 'https://vfowenxzpnexcymlruru.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_qiyT6xSxc_ERIIQKQSyw9Q_X3Zdz2Ja';
 // === VARIABLES GLOBALES ===
 let supabaseClient;
 let joueurs = [];
