@@ -228,6 +228,28 @@ function attachEventListeners() {
         console.log('✅ Event listener import attaché');
     }
 
+    // Bouton export matchs
+    const exportMatchsBtn = document.getElementById('exportMatchsBtn');
+    if (exportMatchsBtn) {
+        exportMatchsBtn.addEventListener('click', function() {
+            if (window.AppSessions && window.AppSessions.exporterMatchs) {
+                window.AppSessions.exporterMatchs();
+            }
+        });
+        console.log('✅ Event listener export matchs attaché');
+    }
+
+    // Import fichier matchs
+    const fichierMatchs = document.getElementById('fichierMatchs');
+    if (fichierMatchs) {
+        fichierMatchs.addEventListener('change', function() {
+            if (window.AppSessions && window.AppSessions.importerMatchs) {
+                window.AppSessions.importerMatchs();
+            }
+        });
+        console.log('✅ Event listener import matchs attaché');
+    }
+
     console.log('🎉 Tous les event listeners attachés avec succès!');
 }
 

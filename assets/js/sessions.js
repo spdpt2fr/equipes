@@ -612,6 +612,227 @@ async function supprimerSession(sessionId) {
     }
 }
 
+// === EXPORTER LES MATCHS JOUÉS ===
+async function exporterMatchs() {
+    try {
+        if (!window.AppCore.isOnline || !window.AppCore.clubActuel) {
+            window.AppCore.showToast('Connexion requise pour exporter', true);
+            return;
+        }
+
+        window.AppCore.showToast('Export en cours...');
+
+        // Charger toutes les sessions du club avec données complètes
+        const { data: sessions, error } = await window.AppCore.supabaseClient
+            .from('sessions')
+            .select(`
+                *,
+                session_teams (
+                    *,
+                    session_players (*)
+                ),
+                match_results (*)
+            `)
+            .eq('club_id', window.AppCore.clubActuel.id)
+            .order('date_session', { ascending: true });
+
+        if (error) throw error;
+
+        if (!sessions || sessions.length === 0) {
+            window.AppCore.showToast('Aucune soirée à exporter', true);
+            return;
+        }
+
+        // Construire le JSON exportable (sans les IDs internes)
+        const exportData = {
+            version: 1,
+            club: window.AppCore.clubActuel.nom,
+            exported_at: new Date().toISOString(),
+            sessions: sessions.map(s => ({
+                date_session: s.date_session,
+                nb_equipes: s.nb_equipes,
+                resultats_saisis: s.resultats_saisis,
+                ajustements_appliques: s.ajustements_appliques,
+                teams: (s.session_teams || []).sort((a, b) => a.numero_equipe - b.numero_equipe).map(t => ({
+                    numero_equipe: t.numero_equipe,
+                    niveau_total: t.niveau_total,
+                    _id: t.id, // gardé temporairement pour mapper les résultats
+                    players: (t.session_players || []).map(p => ({
+                        player_name: p.player_name,
+                        niveau: p.niveau,
+                        poste: p.poste
+                    }))
+                })),
+                results: (s.match_results || []).map(r => {
+                    const eq1 = (s.session_teams || []).find(t => t.id === r.equipe1_id);
+                    const eq2 = (s.session_teams || []).find(t => t.id === r.equipe2_id);
+                    const gagnant = (s.session_teams || []).find(t => t.id === r.gagnant_id);
+                    return {
+                        equipe1_numero: eq1 ? eq1.numero_equipe : null,
+                        equipe2_numero: eq2 ? eq2.numero_equipe : null,
+                        gagnant_numero: gagnant ? gagnant.numero_equipe : null
+                    };
+                })
+            }))
+        };
+
+        // Nettoyer les _id temporaires
+        exportData.sessions.forEach(s => s.teams.forEach(t => delete t._id));
+
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `matchs_${window.AppCore.clubActuel.nom.toLowerCase()}_${new Date().toLocaleDateString('en-CA')}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        window.AppCore.showToast(`${sessions.length} soirée(s) exportée(s)`);
+
+    } catch (error) {
+        console.error('Erreur export matchs:', error);
+        window.AppCore.showToast('Erreur export: ' + error.message, true);
+    }
+}
+
+// === IMPORTER LES MATCHS ===
+async function importerMatchs() {
+    const fichier = document.getElementById('fichierMatchs').files[0];
+    if (!fichier) {
+        window.AppCore.showToast('Aucun fichier sélectionné', true);
+        return;
+    }
+
+    if (!window.AppCore.isOnline) {
+        window.AppCore.showToast('Connexion requise pour importer', true);
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async function(event) {
+        try {
+            const importData = JSON.parse(event.target.result);
+
+            if (!importData.version || !importData.sessions || !Array.isArray(importData.sessions)) {
+                window.AppCore.showToast('Format de fichier invalide', true);
+                return;
+            }
+
+            if (!confirm(`Importer ${importData.sessions.length} soirée(s) depuis "${importData.club || 'inconnu'}" ?\n\nLes soirées existantes ne seront pas dupliquées (vérification par date + nombre d\'équipes).`)) {
+                return;
+            }
+
+            window.AppCore.showToast('Import en cours...');
+
+            // Charger les sessions existantes pour éviter les doublons
+            const { data: existantes } = await window.AppCore.supabaseClient
+                .from('sessions')
+                .select('date_session, nb_equipes')
+                .eq('club_id', window.AppCore.clubActuel.id);
+
+            const existSet = new Set((existantes || []).map(s => `${s.date_session}_${s.nb_equipes}`));
+
+            let importees = 0;
+            let ignorees = 0;
+
+            for (const sessionData of importData.sessions) {
+                const cleDedoublon = `${sessionData.date_session}_${sessionData.nb_equipes}`;
+                if (existSet.has(cleDedoublon)) {
+                    ignorees++;
+                    continue;
+                }
+
+                // 1. Créer la session
+                const { data: session, error: errSession } = await window.AppCore.supabaseClient
+                    .from('sessions')
+                    .insert([{
+                        club_id: window.AppCore.clubActuel.id,
+                        date_session: sessionData.date_session,
+                        nb_equipes: sessionData.nb_equipes,
+                        resultats_saisis: sessionData.resultats_saisis || false,
+                        ajustements_appliques: sessionData.ajustements_appliques || false
+                    }])
+                    .select()
+                    .single();
+
+                if (errSession) { console.error('Erreur import session:', errSession); continue; }
+
+                // Map numéro d'équipe → ID inséré
+                const teamNumToId = {};
+
+                // 2. Créer les équipes
+                for (const teamData of (sessionData.teams || [])) {
+                    const { data: team, error: errTeam } = await window.AppCore.supabaseClient
+                        .from('session_teams')
+                        .insert([{
+                            session_id: session.id,
+                            numero_equipe: teamData.numero_equipe,
+                            niveau_total: teamData.niveau_total || 0
+                        }])
+                        .select()
+                        .single();
+
+                    if (errTeam) { console.error('Erreur import team:', errTeam); continue; }
+                    teamNumToId[teamData.numero_equipe] = team.id;
+
+                    // 3. Créer les joueurs
+                    if (teamData.players && teamData.players.length > 0) {
+                        const playersBatch = teamData.players.map(p => ({
+                            session_team_id: team.id,
+                            player_id: null,
+                            player_name: p.player_name,
+                            niveau: p.niveau,
+                            poste: p.poste
+                        }));
+
+                        await window.AppCore.supabaseClient
+                            .from('session_players')
+                            .insert(playersBatch);
+                    }
+                }
+
+                // 4. Créer les résultats
+                for (const result of (sessionData.results || [])) {
+                    const eq1Id = teamNumToId[result.equipe1_numero];
+                    const eq2Id = teamNumToId[result.equipe2_numero];
+                    const gagnantId = teamNumToId[result.gagnant_numero];
+
+                    if (eq1Id && eq2Id && gagnantId) {
+                        await window.AppCore.supabaseClient
+                            .from('match_results')
+                            .insert([{
+                                session_id: session.id,
+                                equipe1_id: eq1Id,
+                                equipe2_id: eq2Id,
+                                gagnant_id: gagnantId
+                            }]);
+                    }
+                }
+
+                importees++;
+            }
+
+            // Reset le champ fichier
+            document.getElementById('fichierMatchs').value = '';
+
+            // Recharger l'historique
+            await chargerHistorique();
+
+            let msg = `${importees} soirée(s) importée(s)`;
+            if (ignorees > 0) msg += `, ${ignorees} ignorée(s) (doublons)`;
+            window.AppCore.showToast(msg);
+
+        } catch (error) {
+            console.error('Erreur import matchs:', error);
+            window.AppCore.showToast('Erreur import: ' + error.message, true);
+        }
+    };
+    reader.readAsText(fichier, 'utf-8');
+}
+
 // === EXPORT DES FONCTIONS ===
 window.AppSessions = {
     validerSession,
@@ -623,5 +844,7 @@ window.AppSessions = {
     chargerHistorique,
     afficherHistorique,
     recalculerEtAfficherAjustements,
-    supprimerSession
+    supprimerSession,
+    exporterMatchs,
+    importerMatchs
 };

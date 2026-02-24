@@ -91,8 +91,19 @@
                 </div>
                 <button id="exportBtn" class="btn btn-secondary">
                     <span class="material-icons">download</span>
-                    Exporter CSV
+                    Exporter Joueurs
                 </button>
+                <button id="exportMatchsBtn" class="btn btn-secondary">
+                    <span class="material-icons">emoji_events</span>
+                    Exporter Matchs
+                </button>
+                <div class="file-input-wrapper">
+                    <input accept=".json" id="fichierMatchs" type="file" style="display: none;">
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('fichierMatchs').click();">
+                        <span class="material-icons">upload</span>
+                        Importer Matchs
+                    </button>
+                </div>
                 <button id="syncBtn" class="btn btn-warning">
                     <span class="material-icons">sync</span>
                     Synchroniser
