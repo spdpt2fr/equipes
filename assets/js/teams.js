@@ -155,7 +155,7 @@ function afficherEquipes() {
             html += `
                 <li class="team-player" onclick="window.AppTeams.changerEquipe(${idx}, ${e.joueurs.indexOf(j)})">
                     <span class="material-icons">person</span>
-                    ${j.nom} - ${j.poste}${window.AppCore.afficherTotal ? ' (' + j.niveau + ')' : ''}
+                    ${window.AppCore.escapeHtml(j.nom)} - ${window.AppCore.escapeHtml(j.poste)}${window.AppCore.afficherTotal ? ' (' + j.niveau + ')' : ''}
                 </li>
             `;
         });

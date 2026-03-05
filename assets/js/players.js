@@ -68,6 +68,11 @@ async function supprimerJoueur(index) {
     if (!confirm("Supprimer ce joueur ?")) return;
     
     const joueur = window.AppCore.joueurs[index];
+    if (!joueur) {
+        window.AppCore.showToast('Joueur introuvable, rechargez la liste', true);
+        if (window.afficherJoueurs) window.afficherJoueurs();
+        return;
+    }
     const nom = joueur.nom;
 
     try {
@@ -99,6 +104,11 @@ async function supprimerJoueur(index) {
 // === MODIFIER JOUEUR ===
 async function modifierJoueur(index, champ, valeur) {
     const joueur = window.AppCore.joueurs[index];
+    if (!joueur) {
+        window.AppCore.showToast('Joueur introuvable, rechargez la liste', true);
+        if (window.afficherJoueurs) window.afficherJoueurs();
+        return;
+    }
     const ancienneValeur = joueur[champ];
 
     if (champ === 'nom') {

@@ -40,6 +40,17 @@ function showToast(message, isError = false) {
     }, 3000);
 }
 
+// Échapper les caractères HTML pour éviter les injections XSS
+function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 // === EXPORT POUR AUTRES MODULES ===
 // Variables globales disponibles via window
 window.AppCore = {
@@ -58,5 +69,6 @@ window.AppCore = {
     sessionValidee,
     historiqueSessions,
     updateStatus,
-    showToast
+    showToast,
+    escapeHtml
 };

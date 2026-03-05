@@ -14,7 +14,10 @@ function sauvegarderClub(clubId) {
 
 function getTableName() {
     if (!window.AppCore.clubActuel) return 'players_grenoble'; // fallback
-    return window.AppCore.clubActuel.nom.toLowerCase() === 'grenoble' ? 'players_grenoble' : 'players_jeeves';
+    const nom = window.AppCore.clubActuel.nom.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')  // supprimer accents
+        .replace(/\s+/g, '_');
+    return `players_${nom}`;
 }
 
 // === CHARGEMENT DES CLUBS ===

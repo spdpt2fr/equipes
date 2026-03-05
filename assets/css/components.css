@@ -59,6 +59,7 @@
 
 /* Result pills */
 .result-pill { display: inline-block; background: #e3f2fd; color: #1565c0; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+.result-pill.draw { background: #fff8e1; color: #f57f17; }
 
 /* === RÉSULTATS MATCHS === */
 .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
@@ -71,6 +72,7 @@
 .match-option input[type="radio"] { accent-color: #1976d2; width: 18px; height: 18px; }
 .match-label { font-size: 14px; font-weight: 500; }
 .match-label.win { color: #2e7d32; }
+.match-label.draw { color: #1565c0; }
 .match-label.skip { color: #888; }
 
 /* === AJUSTEMENTS === */

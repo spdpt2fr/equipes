@@ -134,6 +134,11 @@ function afficherInterfaceResultats(sessionId, teamIds) {
                         <span class="match-label win">🏆 Équipe ${p.j + 1}</span>
                     </label>
                     <label class="match-option">
+                        <input type="radio" name="match_${idx}" value="draw" 
+                               data-eq1="${p.teamId1}" data-eq2="${p.teamId2}">
+                        <span class="match-label draw">🤝 Match nul</span>
+                    </label>
+                    <label class="match-option">
                         <input type="radio" name="match_${idx}" value="skip" checked 
                                data-eq1="${p.teamId1}" data-eq2="${p.teamId2}">
                         <span class="match-label skip">⏭️ Non joué</span>
@@ -167,11 +172,12 @@ async function sauvegarderResultats(sessionId) {
 
         radios.forEach(radio => {
             if (radio.value === 'skip') return;
+            const gagnantId = radio.value === 'draw' ? null : parseInt(radio.value, 10);
             resultats.push({
                 session_id: sessionId,
                 equipe1_id: parseInt(radio.dataset.eq1),
                 equipe2_id: parseInt(radio.dataset.eq2),
-                gagnant_id: parseInt(radio.value)
+                gagnant_id: gagnantId
             });
         });
 
@@ -181,10 +187,12 @@ async function sauvegarderResultats(sessionId) {
         }
 
         // Supprimer d'éventuels anciens résultats pour cette session
-        await window.AppCore.supabaseClient
+        const { error: errDelete } = await window.AppCore.supabaseClient
             .from('match_results')
             .delete()
             .eq('session_id', sessionId);
+
+        if (errDelete) throw errDelete;
 
         // Insérer les nouveaux résultats
         const { error } = await window.AppCore.supabaseClient
@@ -270,6 +278,10 @@ async function calculerAjustements(sessionId) {
                     const oppAvg = teamAvg[oppTeamId] || 5;
                     const strengthDiff = (oppAvg - myAvg) / 10;
 
+                    if (result.gagnant_id == null) {
+                        return; // Match nul : pas d'ajustement
+                    }
+
                     if (result.gagnant_id === myTeamId) {
                         // Victoire : bonus ajusté par la force adverse
                         totalDelta += DELTA_BASE * (1 + strengthDiff);
@@ -283,7 +295,7 @@ async function calculerAjustements(sessionId) {
                 if (matchsJoues === 0) return;
 
                 const niveauActuel = player.niveau;
-                const nouveauNiveau = Math.max(1, Math.min(10, Math.round((niveauActuel + totalDelta) * 10) / 10));
+                const nouveauNiveau = Math.max(1, Math.min(10, parseFloat((niveauActuel + totalDelta).toFixed(1))));
 
                 ajustements[player.player_id] = {
                     player_id: player.player_id,
@@ -343,7 +355,7 @@ function afficherAjustements(sessionId, ajustements) {
 
         html += `
             <div class="ajustement-row ${deltaClass}">
-                <span class="ajustement-nom">${a.nom}</span>
+                <span class="ajustement-nom">${window.AppCore.escapeHtml(a.nom)}</span>
                 <span class="ajustement-detail">
                     ${arrow} ${a.niveauActuel} → <strong>${a.nouveauNiveau}</strong>
                     <span class="ajustement-delta">(${deltaStr})</span>
@@ -359,7 +371,7 @@ function afficherAjustements(sessionId, ajustements) {
             const deltaStr = a.delta >= 0 ? `+${a.delta.toFixed(2)}` : a.delta.toFixed(2);
             html += `
                 <div class="ajustement-row delta-neutral">
-                    <span class="ajustement-nom">${a.nom}</span>
+                    <span class="ajustement-nom">${window.AppCore.escapeHtml(a.nom)}</span>
                     <span class="ajustement-detail">
                         ${a.niveauActuel} (${deltaStr})
                     </span>
@@ -397,7 +409,7 @@ async function appliquerAjustements(sessionId) {
             // Utiliser le niveau actuel du joueur (pas le snapshot)
             const joueurLocal = window.AppCore.joueurs.find(j => j.id === a.player_id);
             const niveauActuelReel = joueurLocal ? joueurLocal.niveau : a.niveauActuel;
-            const nouveauNiveau = Math.max(1, Math.min(10, Math.round((niveauActuelReel + a.delta) * 10) / 10));
+            const nouveauNiveau = Math.max(1, Math.min(10, parseFloat((niveauActuelReel + a.delta).toFixed(1))));
 
             if (nouveauNiveau === niveauActuelReel) continue;
 
@@ -515,18 +527,18 @@ function afficherHistorique() {
         teams.forEach(team => {
             const joueurs = (team.session_players || []).sort((a, b) => b.niveau - a.niveau);
             // Compter les victoires pour cette équipe
-            const victoires = results.filter(r => r.gagnant_id === team.id).length;
-            const defaites = results.filter(r =>
-                (r.equipe1_id === team.id || r.equipe2_id === team.id) && r.gagnant_id !== team.id
-            ).length;
+            const matchsEquipe = results.filter(r => r.equipe1_id === team.id || r.equipe2_id === team.id);
+            const victoires = matchsEquipe.filter(r => r.gagnant_id === team.id).length;
+            const nuls = matchsEquipe.filter(r => r.gagnant_id == null).length;
+            const defaites = matchsEquipe.filter(r => r.gagnant_id != null && r.gagnant_id !== team.id).length;
 
             html += `
                 <div class="session-team-row">
                     <strong>Éq. ${team.numero_equipe}</strong>
-                    ${results.length > 0 ? `<span class="session-record">${victoires}V ${defaites}D</span>` : ''}
+                    ${results.length > 0 ? `<span class="session-record">${victoires}V ${nuls}N ${defaites}D</span>` : ''}
                     <span class="session-total">(${team.niveau_total} pts)</span>
                     <span class="session-players-list">
-                        ${joueurs.map(j => `<span class="session-player">${j.player_name}<sup>${j.niveau}</sup></span>`).join(' ')}
+                        ${joueurs.map(j => `<span class="session-player">${window.AppCore.escapeHtml(j.player_name)}<sup>${j.niveau}</sup></span>`).join(' ')}
                     </span>
                 </div>
             `;
@@ -543,6 +555,8 @@ function afficherHistorique() {
                 const gagnant = teamMap[r.gagnant_id];
                 if (eq1 && eq2 && gagnant) {
                     html += `<span class="result-pill">Éq.${eq1.numero_equipe} vs Éq.${eq2.numero_equipe} → 🏆 Éq.${gagnant.numero_equipe}</span>`;
+                } else if (eq1 && eq2) {
+                    html += `<span class="result-pill draw">Éq.${eq1.numero_equipe} vs Éq.${eq2.numero_equipe} → 🤝 Match nul</span>`;
                 }
             });
             html += '</div>';
@@ -656,7 +670,6 @@ async function exporterMatchs() {
                 teams: (s.session_teams || []).sort((a, b) => a.numero_equipe - b.numero_equipe).map(t => ({
                     numero_equipe: t.numero_equipe,
                     niveau_total: t.niveau_total,
-                    _id: t.id, // gardé temporairement pour mapper les résultats
                     players: (t.session_players || []).map(p => ({
                         player_name: p.player_name,
                         niveau: p.niveau,
@@ -675,9 +688,6 @@ async function exporterMatchs() {
                 })
             }))
         };
-
-        // Nettoyer les _id temporaires
-        exportData.sessions.forEach(s => s.teams.forEach(t => delete t._id));
 
         const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json;charset=utf-8' });
         const url = URL.createObjectURL(blob);
@@ -798,9 +808,9 @@ async function importerMatchs() {
                 for (const result of (sessionData.results || [])) {
                     const eq1Id = teamNumToId[result.equipe1_numero];
                     const eq2Id = teamNumToId[result.equipe2_numero];
-                    const gagnantId = teamNumToId[result.gagnant_numero];
+                    const gagnantId = result.gagnant_numero ? teamNumToId[result.gagnant_numero] : null;
 
-                    if (eq1Id && eq2Id && gagnantId) {
+                    if (eq1Id && eq2Id) {
                         await window.AppCore.supabaseClient
                             .from('match_results')
                             .insert([{

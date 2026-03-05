@@ -17,7 +17,15 @@ async function changerClub(nomClub) {
         if (!window.AppCore.clubActuel) {
             throw new Error(`Club "${nomClub}" non trouvé`);
         }
-        
+
+        // Réinitialiser les données du club précédent
+        window.AppCore.equipes = [];
+        window.AppCore.sessionValidee = null;
+        const equipesContainer = document.getElementById('equipesContainer');
+        if (equipesContainer) equipesContainer.innerHTML = '';
+        const resultatsContainer = document.getElementById('resultatsContainer');
+        if (resultatsContainer) resultatsContainer.innerHTML = '';
+
         window.AppStorage.sauvegarderClub(nomClub);
         
         // Recharger les joueurs pour le nouveau club
