@@ -587,7 +587,7 @@ function afficherHistorique() {
         if (window.AppCore.isOnline) {
             html += `
                 <button onclick="window.AppSessions.renoterResultats(${session.id})" class="btn btn-edit-outline btn-sm" title="Modifier les résultats">
-                    <span class="material-icons">edit</span>
+                    <span class="material-icons">edit_note</span>
                 </button>
             `;
         }
@@ -920,7 +920,7 @@ function calculerDeltaSession(session) {
 }
 
 // === RE-NOTATION : AFFICHER L'INTERFACE ===
-async function renoterResultats(sessionId) {
+function renoterResultats(sessionId) {
     if (!window.AppCore.isOnline) {
         window.AppCore.showToast('Connexion requise pour modifier les résultats', true);
         return;
@@ -939,6 +939,9 @@ async function renoterResultats(sessionId) {
     // Préparer les équipes ordonnées
     const teams = (session.session_teams || []).sort((a, b) => a.numero_equipe - b.numero_equipe);
     const teamIds = teams.map(t => t.id);
+
+    // Basculer vers l'onglet Gestion pour que #resultatsContainer soit visible
+    if (window.AppUI && window.AppUI.switchTab) window.AppUI.switchTab('gestion');
 
     // Afficher l'interface de saisie dans resultatsContainer
     afficherInterfaceResultats(sessionId, teamIds);
@@ -1003,7 +1006,7 @@ async function sauvegarderRenotation(sessionId) {
         // Mettre à jour l'état de la session
         await supabase.from('sessions').update({
             resultats_saisis: resultats.length > 0,
-            ajustements_appliques: true
+            ajustements_appliques: resultats.length > 0
         }).eq('id', sessionId);
 
         // Recharger la session depuis la DB pour calculer le nouveau delta
