@@ -110,6 +110,32 @@ function afficherInterfaceResultats(sessionId, teamIds) {
         }
     }
 
+    // Construire la map teamId → noms des joueurs
+    const teamPlayersMap = {};
+
+    // Cas 1 : depuis l'historique (re-notation)
+    const sessionHistorique = (window.AppCore.historiqueSessions || []).find(s => s.id === sessionId);
+    if (sessionHistorique) {
+        (sessionHistorique.session_teams || []).forEach(t => {
+            teamPlayersMap[t.id] = (t.session_players || []).map(p => p.player_name);
+        });
+    }
+
+    // Cas 2 : depuis les équipes générées en live
+    if (Object.keys(teamPlayersMap).length === 0 && window.AppCore.equipes && window.AppCore.equipes.length === teamIds.length) {
+        teamIds.forEach((id, i) => {
+            const eq = window.AppCore.equipes[i];
+            if (eq) teamPlayersMap[id] = (eq.joueurs || []).map(j => j.nom);
+        });
+    }
+
+    const esc = (s) => window.AppCore.escapeHtml ? window.AppCore.escapeHtml(s) : s;
+    const getPlayers = (teamId) => {
+        const names = teamPlayersMap[teamId] || [];
+        if (names.length === 0) return '';
+        return `<span class="team-players-list">${names.map(esc).join(', ')}</span>`;
+    };
+
     let html = `
         <div class="card">
             <h2 class="card-title">
@@ -130,12 +156,12 @@ function afficherInterfaceResultats(sessionId, teamIds) {
                     <label class="match-option">
                         <input type="radio" name="match_${idx}" value="${p.teamId1}" 
                                data-eq1="${p.teamId1}" data-eq2="${p.teamId2}">
-                        <span class="match-label win">🏆 Équipe ${p.i + 1}</span>
+                        <span class="match-label win">🏆 Équipe ${p.i + 1} ${getPlayers(p.teamId1)}</span>
                     </label>
                     <label class="match-option">
                         <input type="radio" name="match_${idx}" value="${p.teamId2}" 
                                data-eq1="${p.teamId1}" data-eq2="${p.teamId2}">
-                        <span class="match-label win">🏆 Équipe ${p.j + 1}</span>
+                        <span class="match-label win">🏆 Équipe ${p.j + 1} ${getPlayers(p.teamId2)}</span>
                     </label>
                     <label class="match-option">
                         <input type="radio" name="match_${idx}" value="draw" 
