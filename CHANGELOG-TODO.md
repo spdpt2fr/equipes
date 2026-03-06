@@ -196,3 +196,58 @@ Ajouter :
 - Tester cascade : 3 sessions en ordre, corriger la première  les 2 suivantes passent en attente
 - Tester session sans résultats (doit se comporter comme "Saisir résultats")
 - Le bouton "Modifier" ne doit pas apparaître en mode hors ligne (`isOnline = false`)
+
+---
+
+## 8. Formule Elo simplifié (remplace DELTA_BASE)
+
+**Décisions validées** : `ELO_K = 0.3`, `ELO_DIVISOR = 4`, nuls donnent un delta , max ~0.23 par match vs équipe égale
+
+### Fichiers à modifier : `assets/js/sessions.js`, `tests/tests.js`
+
+### Tâches
+
+- [x] `sessions.js`  constantes : remplacer `DELTA_BASE`
+  - Supprimer : `const DELTA_BASE = 0.15;`
+  - Ajouter : `const ELO_K = 0.3;` et `const ELO_DIVISOR = 4;`
+  - Ces deux constantes remplacent intégralement DELTA_BASE dans toute la logique
+
+- [x] `sessions.js`  `_calculerDeltaMatch(myAvg, oppAvg, resultat)` : nouvelle fonction privée
+  - Déclarer avec `function` (pas `const`) immédiatement après les constantes, avant toute autre fonction
+  - `resultat` : 1 = victoire, 0 = défaite, 0.5 = nul
+  - Formule : `const expected = 1 / (1 + Math.pow(10, (oppAvg - myAvg) / ELO_DIVISOR));`
+  - Retourne : `ELO_K * (resultat - expected)`
+  - **Ne pas exporter**  fonction interne uniquement (préfixe `_`)
+
+- [x] `sessions.js`  `calculerAjustements(sessionId)` : remplacer formule DELTA_BASE
+  - **Supprimer** le `if (result.gagnant_id == null) return;`  les nuls ont maintenant un delta
+  - Remplacer le bloc `if (gagnant_id === myTeamId) { totalDelta += ... } else { totalDelta -= ... }` par :
+    ```js
+    const res = result.gagnant_id == null ? 0.5
+              : result.gagnant_id === myTeamId ? 1 : 0;
+    totalDelta += _calculerDeltaMatch(myAvg, oppAvg, res);
+    ```
+  - `myAvg` et `oppAvg` calculés depuis `niveau_total / nb_joueurs` des équipes concernées
+
+- [x] `sessions.js`  `calculerDeltaSession(session)` : même remplacement
+  - Même suppression du `return` anticipé sur nul
+  - Même remplacement du bloc DELTA_BASE par appel à `_calculerDeltaMatch`
+  - Formule identique à `calculerAjustements` mais depuis snapshots `session_players.niveau`
+
+- [x] `tests/tests.js`  vérifier et mettre à jour les tests impactés
+  - Aucune valeur numérique `0.15` trouvée dans les tests existants  pas de valeur à changer
+  - Ajouter une suite **"Formule Elo simplifié"** avec tests unitaires de `_calculerDeltaMatch` si elle est exposée, sinon tester via `calculerAjustements` mocké
+  - Cas à couvrir : victoire équipes égales (+0.15), défaite équipes égales (0.15), victoire contre plus fort (+>0.15), nul entre égaux (0)
+
+### Points d'attention
+
+- **Ordre de déclaration** : `_calculerDeltaMatch` doit être déclarée avec `function` (hoisting) ou placée AVANT les deux fonctions appelantes dans le fichier
+- **Suppression du `return` anticipé** : le `if (result.gagnant_id == null) return;` existe dans `calculerAjustements` ET `calculerDeltaSession`  supprimer dans les DEUX
+- **Affichage des ajustements** : `afficherAjustements()` affiche désormais des deltas pour les nuls (ex: +0.02)  le rendu visuel changera légèrement, pas de modification CSS requise mais à valider visuellement
+- **Note section 7 obsolète** : la section 7 de ce fichier mentionne la formule `DELTA_BASE * (1 + (oppAvg - myAvg) / 10)`  elle sera remplacée par Elo mais les sessions déjà sauvegardées en DB ne sont pas recalculées (comportement attendu)
+- **Valeurs Elo de référence** pour validation manuelle :
+  - Équipes égales : `expected = 0.5`  victoire `+0.15`, défaite `0.15`, nul `0`
+  - Opp. +2 niveaux (`myAvg=5, oppAvg=7`) : `expected  0.24`  victoire `+0.23`, défaite `0.07`
+  - Opp. 2 niveaux (`myAvg=7, oppAvg=5`) : `expected  0.76`  victoire `+0.07`, défaite `0.23`
+- **Pas de modification CSS** requise pour cette feature
+- **Pas de modification Supabase**  logique purement JS côté client

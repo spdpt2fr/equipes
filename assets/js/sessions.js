@@ -3,7 +3,20 @@
 // Module de gestion des sessions de jeu, résultats et ajustements
 // ===================================================================
 
-const DELTA_BASE = 0.15; // Ajustement de base par match
+const ELO_K = 0.3;       // Facteur K Elo - amplitude max du delta par match
+const ELO_DIVISOR = 4;   // Diviseur d'échelle (adapté aux niveaux 1-10)
+
+/**
+ * Calcule le delta Elo pour une équipe sur un match.
+ * @param {number} myAvg   - Niveau moyen de l'équipe
+ * @param {number} oppAvg  - Niveau moyen de l'adversaire
+ * @param {number} resultat - 1=victoire, 0=défaite, 0.5=nul
+ * @returns {number} delta à appliquer (positif=gain, négatif=perte)
+ */
+function _calculerDeltaMatch(myAvg, oppAvg, resultat) {
+    const expected = 1 / (1 + Math.pow(10, (oppAvg - myAvg) / ELO_DIVISOR));
+    return ELO_K * (resultat - expected);
+}
 
 // Variables mémoire pour la re-notation
 let _ancienDeltaRenotation = {};
@@ -306,19 +319,10 @@ async function calculerAjustements(sessionId) {
 
                     const myAvg = teamAvg[myTeamId] || 5;
                     const oppAvg = teamAvg[oppTeamId] || 5;
-                    const strengthDiff = (oppAvg - myAvg) / 10;
 
-                    if (result.gagnant_id == null) {
-                        return; // Match nul : pas d'ajustement
-                    }
-
-                    if (result.gagnant_id === myTeamId) {
-                        // Victoire : bonus ajusté par la force adverse
-                        totalDelta += DELTA_BASE * (1 + strengthDiff);
-                    } else {
-                        // Défaite : malus ajusté par la force adverse
-                        totalDelta -= DELTA_BASE * (1 - strengthDiff);
-                    }
+                    const res = result.gagnant_id == null ? 0.5
+                              : result.gagnant_id === myTeamId ? 1 : 0;
+                    totalDelta += _calculerDeltaMatch(myAvg, oppAvg, res);
                     matchsJoues++;
                 });
 
@@ -920,15 +924,10 @@ function calculerDeltaSession(session) {
 
                 const myAvg = teamAvg[myTeamId] || 5;
                 const oppAvg = teamAvg[oppTeamId] || 5;
-                const strengthDiff = (oppAvg - myAvg) / 10;
 
-                if (result.gagnant_id == null) return; // nul : pas de delta
-
-                if (result.gagnant_id === myTeamId) {
-                    totalDelta += DELTA_BASE * (1 + strengthDiff);
-                } else {
-                    totalDelta -= DELTA_BASE * (1 - strengthDiff);
-                }
+                const res = result.gagnant_id == null ? 0.5
+                          : result.gagnant_id === myTeamId ? 1 : 0;
+                totalDelta += _calculerDeltaMatch(myAvg, oppAvg, res);
                 matchsJoues++;
             });
 
@@ -1287,5 +1286,6 @@ window.AppSessions = {
     exporterStats,
     calculerDeltaSession,
     renoterResultats,
-    sauvegarderRenotation
+    sauvegarderRenotation,
+    _calculerDeltaMatch
 };

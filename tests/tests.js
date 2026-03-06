@@ -255,3 +255,62 @@ describe('Sessions - afficherHistorique() avec match nul', function () {
     chai.expect(text).to.include('0V 0N 1D');
   });
 });
+
+// ===================================================================
+// TESTS - Formule Elo simplifié (_calculerDeltaMatch)
+// ===================================================================
+describe('AppSessions - _calculerDeltaMatch()', function () {
+  const fn = () => window.AppSessions._calculerDeltaMatch;
+
+  it('victoire entre équipes égales → delta ≈ +0.15', function () {
+    const delta = fn()(5, 5, 1);
+    chai.expect(delta).to.be.closeTo(0.15, 0.001);
+  });
+
+  it('défaite entre équipes égales → delta ≈ −0.15', function () {
+    const delta = fn()(5, 5, 0);
+    chai.expect(delta).to.be.closeTo(-0.15, 0.001);
+  });
+
+  it('nul entre équipes égales → delta ≈ 0', function () {
+    const delta = fn()(5, 5, 0.5);
+    chai.expect(delta).to.be.closeTo(0, 0.001);
+  });
+
+  it('victoire contre équipe +2 niveaux → delta > 0.15 (bonus surprise)', function () {
+    const delta = fn()(5, 7, 1);
+    chai.expect(delta).to.be.above(0.15);
+  });
+
+  it('défaite contre équipe +2 niveaux → |delta| < 0.15 (pénalité réduite)', function () {
+    const delta = fn()(5, 7, 0);
+    chai.expect(Math.abs(delta)).to.be.below(0.15);
+  });
+
+  it('victoire contre équipe −2 niveaux → delta < 0.15 (bonus réduit)', function () {
+    const delta = fn()(7, 5, 1);
+    chai.expect(delta).to.be.below(0.15);
+  });
+
+  it('défaite contre équipe −2 niveaux → |delta| > 0.15 (pénalité amplifiée)', function () {
+    const delta = fn()(7, 5, 0);
+    chai.expect(Math.abs(delta)).to.be.above(0.15);
+  });
+
+  it('delta victoire + delta défaite = 0 (conservation symétrique)', function () {
+    const win = fn()(6, 4, 1);
+    const lose = fn()(4, 6, 0);
+    // Les deux sont du même côté de la balance : symmétrie globale
+    chai.expect(win + lose).to.be.closeTo(0, 0.001);
+  });
+
+  it('nul contre adversaire plus fort → léger delta positif', function () {
+    const delta = fn()(4, 7, 0.5);
+    chai.expect(delta).to.be.above(0);
+  });
+
+  it('nul contre adversaire plus faible → léger delta négatif', function () {
+    const delta = fn()(7, 4, 0.5);
+    chai.expect(delta).to.be.below(0);
+  });
+});
