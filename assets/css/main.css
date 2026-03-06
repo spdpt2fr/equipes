@@ -20,3 +20,16 @@ body { font-family: 'Roboto', sans-serif; background-color: #f4f6fa; color: #212
 .toast { position: fixed; top: 20px; right: 20px; background: #388e3c; color: white; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); z-index: 1000; transform: translateX(400px); transition: transform 0.3s ease; }
 .toast.show { transform: translateX(0); }
 .toast.error { background: #d32f2f; }
+
+/* === ONGLETS === */
+.tab-bar { display: flex; background: white; border-radius: 12px; padding: 6px; gap: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.12); position: sticky; top: 48px; z-index: 100; }
+.tab-btn { flex: 1; padding: 10px 8px; border: none; border-radius: 8px; background: transparent; font-size: 14px; font-weight: 500; cursor: pointer; color: #555; transition: all 0.2s; min-height: 44px; }
+.tab-btn:hover { background: #f0f4f8; }
+.tab-btn.active { background: #1976d2; color: white; }
+.tab-section { display: none; }
+.tab-section.active { display: contents; }
+
+@media (max-width: 768px) {
+  .tab-bar { top: 44px; }
+  .tab-btn { font-size: 12px; padding: 10px 4px; }
+}

@@ -49,6 +49,20 @@ function toggleTotalNiveaux() {
     if (window.afficherEquipes) window.afficherEquipes();
 }
 
+// === NAVIGATION PAR ONGLETS ===
+function switchTab(tabName) {
+    document.querySelectorAll('.tab-btn').forEach(btn =>
+        btn.classList.toggle('active', btn.dataset.tab === tabName));
+    document.querySelectorAll('.tab-section').forEach(s =>
+        s.classList.toggle('active', s.id === `section-${tabName}`));
+    if (tabName === 'historique' && window.AppSessions && window.AppSessions.chargerHistorique) {
+        window.AppSessions.chargerHistorique();
+    }
+    if (tabName === 'stats' && window.AppSessions && window.AppSessions.afficherStats) {
+        window.AppSessions.afficherStats();
+    }
+}
+
 // === AFFICHAGE DES JOUEURS ===
 function afficherJoueurs() {
     const carte = document.getElementById('listeJoueursCard');
@@ -133,6 +147,12 @@ function afficherJoueurs() {
 // === ATTACHER LES EVENT LISTENERS ===
 function attachEventListeners() {
     console.log('🔗 Attachement des event listeners...');
+
+    // Onglets de navigation
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+    console.log('✅ Event listeners onglets attachés');
     
     // Sélecteur de club
     const clubSelect = document.getElementById('clubSelect');
@@ -263,7 +283,8 @@ window.AppUI = {
     toggleTriEquipes,
     toggleTotalNiveaux,
     afficherJoueurs,
-    attachEventListeners
+    attachEventListeners,
+    switchTab
 };
 
 // Rendre afficherJoueurs globale pour compatibilité

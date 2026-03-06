@@ -24,6 +24,15 @@
             </h1>
         </div>
 
+        <!-- Navigation par onglets -->
+        <nav class="tab-bar">
+            <button class="tab-btn active" data-tab="gestion">🏒 Gestion</button>
+            <button class="tab-btn" data-tab="historique">📅 Historique</button>
+            <button class="tab-btn" data-tab="stats">📊 Stats</button>
+        </nav>
+
+        <div id="section-gestion" class="tab-section active">
+
         <!-- Sélecteur de Club -->
         <div class="club-selector">
             <div class="club-title">
@@ -162,8 +171,18 @@
         <!-- Résultats de la soirée (généré dynamiquement) -->
         <div id="resultatsContainer"></div>
 
+        </div><!-- fin #section-gestion -->
+
         <!-- Historique des soirées -->
-        <div id="historiqueContainer"></div>
+        <div id="section-historique" class="tab-section">
+            <div id="historiqueContainer"></div>
+        </div>
+
+        <!-- Statistiques joueurs -->
+        <div id="section-stats" class="tab-section">
+            <div id="statsContainer"></div>
+        </div>
+
     </div>
 
     <!-- Scripts JavaScript modulaires -->

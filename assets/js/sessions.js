@@ -467,8 +467,7 @@ async function chargerHistorique() {
                 match_results (*)
             `)
             .eq('club_id', window.AppCore.clubActuel.id)
-            .order('date_session', { ascending: false })
-            .limit(10);
+            .order('date_session', { ascending: false });
 
         if (error) throw error;
 
@@ -843,6 +842,175 @@ async function importerMatchs() {
     reader.readAsText(fichier, 'utf-8');
 }
 
+// === STATISTIQUES JOUEURS ===
+function calculerStats() {
+    const stats = {};
+
+    (window.AppCore.historiqueSessions || []).forEach(session => {
+        const teams = session.session_teams || [];
+        const results = session.match_results || [];
+
+        teams.forEach(team => {
+            const matchsEquipe = results.filter(r =>
+                r.equipe1_id === team.id || r.equipe2_id === team.id
+            );
+
+            (team.session_players || []).forEach(player => {
+                const nom = player.player_name;
+                if (!stats[nom]) {
+                    stats[nom] = { nom, victoires: 0, nuls: 0, defaites: 0, matchs: 0, historiqueNiveau: [] };
+                }
+
+                // Snapshot de niveau pour cette session
+                const dateExiste = stats[nom].historiqueNiveau.some(h => h.date === session.date_session);
+                if (!dateExiste) {
+                    stats[nom].historiqueNiveau.push({ date: session.date_session, niveau: player.niveau });
+                }
+
+                // V / N / D
+                matchsEquipe.forEach(r => {
+                    stats[nom].matchs++;
+                    if (r.gagnant_id === null) {
+                        stats[nom].nuls++;
+                    } else if (r.gagnant_id === team.id) {
+                        stats[nom].victoires++;
+                    } else {
+                        stats[nom].defaites++;
+                    }
+                });
+            });
+        });
+    });
+
+    return Object.values(stats)
+        .map(s => ({
+            ...s,
+            pct: s.matchs > 0 ? Math.round(s.victoires / s.matchs * 100) : 0,
+            historiqueNiveau: s.historiqueNiveau.sort((a, b) => a.date.localeCompare(b.date))
+        }))
+        .sort((a, b) => b.pct - a.pct || b.matchs - a.matchs || a.nom.localeCompare(b.nom, 'fr'));
+}
+
+function afficherStats() {
+    const container = document.getElementById('statsContainer');
+    if (!container) return;
+
+    // Charger l'historique si pas encore fait
+    if (!window.AppCore.historiqueSessions || window.AppCore.historiqueSessions.length === 0) {
+        if (window.AppCore.isOnline) {
+            chargerHistorique().then(() => afficherStats());
+            container.innerHTML = '<div class="card"><p style="text-align:center;padding:24px;color:#666">Chargement...</p></div>';
+            return;
+        }
+        container.innerHTML = '<div class="card"><p style="text-align:center;padding:24px;color:#666">Aucune soirée dans l\'historique.</p></div>';
+        return;
+    }
+
+    const stats = calculerStats();
+    if (stats.length === 0) {
+        container.innerHTML = '<div class="card"><p style="text-align:center;padding:24px;color:#666">Aucun joueur trouvé dans l\'historique.</p></div>';
+        return;
+    }
+
+    let html = `
+        <div class="card">
+            <h2 class="card-title">
+                <span class="material-icons">bar_chart</span>
+                Statistiques joueurs
+                <button onclick="window.AppSessions.exporterStats()" class="btn btn-secondary" style="margin-left:auto;font-size:13px;padding:6px 14px;">
+                    <span class="material-icons" style="font-size:16px;">download</span>
+                    Exporter CSV
+                </button>
+            </h2>
+            <div class="stats-table-wrapper">
+                <table class="stats-table">
+                    <thead>
+                        <tr>
+                            <th>Joueur</th>
+                            <th>V</th><th>N</th><th>D</th>
+                            <th>Matchs</th>
+                            <th>%V</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    `;
+
+    stats.forEach((s, idx) => {
+        const rowClass = s.pct > 50 ? 'stats-win' : s.pct < 40 && s.matchs > 0 ? 'stats-lose' : '';
+        const historiqueHtml = s.historiqueNiveau.map((h, i) => {
+            const prev = s.historiqueNiveau[i - 1];
+            const diff = prev ? (h.niveau - prev.niveau) : null;
+            const arrow = diff === null ? '' : diff > 0 ? ' ⬆️' : diff < 0 ? ' ⬇️' : ' ↔️';
+            const d = new Date(h.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+            return `<div class="niveau-history-row">${d} → <strong>${h.niveau}</strong>${arrow}</div>`;
+        }).join('');
+
+        html += `
+                        <tr class="stats-row ${rowClass}" onclick="window._toggleHistorique(${idx})">
+                            <td>${window.AppCore.escapeHtml(s.nom)} <span class="history-toggle" id="htoggle-${idx}">▼</span></td>
+                            <td class="stats-v">${s.victoires}</td>
+                            <td class="stats-n">${s.nuls}</td>
+                            <td class="stats-d">${s.defaites}</td>
+                            <td>${s.matchs}</td>
+                            <td><strong>${s.pct}%</strong></td>
+                        </tr>
+                        <tr id="hrow-${idx}" class="history-row" style="display:none">
+                            <td colspan="6">
+                                <div class="niveau-history">
+                                    ${historiqueHtml || '<em style="color:#aaa">Aucun snapshot de niveau disponible</em>'}
+                                </div>
+                            </td>
+                        </tr>
+        `;
+    });
+
+    html += `
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    container.innerHTML = html;
+
+    window._toggleHistorique = function(idx) {
+        const row = document.getElementById(`hrow-${idx}`);
+        const toggle = document.getElementById(`htoggle-${idx}`);
+        if (row) {
+            const visible = row.style.display !== 'none';
+            row.style.display = visible ? 'none' : 'table-row';
+            if (toggle) toggle.textContent = visible ? '▼' : '▲';
+        }
+    };
+}
+
+function exporterStats() {
+    const stats = calculerStats();
+    if (stats.length === 0) {
+        window.AppCore.showToast('Aucune statistique à exporter', true);
+        return;
+    }
+
+    const lignes = [
+        'Joueur,Victoires,Nuls,Defaites,Matchs,%Victoires,Historique niveau (date:valeur)',
+        ...stats.map(s => {
+            const historique = s.historiqueNiveau.map(h => `${h.date}:${h.niveau}`).join('|');
+            return `${s.nom},${s.victoires},${s.nuls},${s.defaites},${s.matchs},${s.pct}%,"${historique}"`;
+        })
+    ].join('\n');
+
+    const blob = new Blob(['\uFEFF' + lignes], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const dateStr = new Date().toLocaleDateString('en-CA');
+    a.download = `stats_${window.AppCore.clubActuel.nom.toLowerCase().replace(/\s+/g, '_')}_${dateStr}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    window.AppCore.showToast('Statistiques exportées !');
+}
+
 // === EXPORT DES FONCTIONS ===
 window.AppSessions = {
     validerSession,
@@ -856,5 +1024,8 @@ window.AppSessions = {
     recalculerEtAfficherAjustements,
     supprimerSession,
     exporterMatchs,
-    importerMatchs
+    importerMatchs,
+    calculerStats,
+    afficherStats,
+    exporterStats
 };

@@ -91,3 +91,28 @@
 .btn-sm { padding: 6px 14px; font-size: 12px; }
 .btn-danger-outline { background: transparent; color: #d32f2f; border: 1px solid #d32f2f; padding: 6px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; transition: all 0.2s; }
 .btn-danger-outline:hover { background: #d32f2f; color: white; }
+
+/* === TABLEAU STATISTIQUES === */
+.stats-table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.stats-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.stats-table thead th { background: #1976d2; color: white; padding: 10px 12px; text-align: center; font-weight: 600; position: sticky; top: 0; }
+.stats-table thead th:first-child { text-align: left; }
+.stats-table tbody td { padding: 10px 12px; text-align: center; vertical-align: middle; }
+.stats-table tbody td:first-child { text-align: left; font-weight: 500; }
+.stats-row { cursor: pointer; transition: background 0.15s; border-bottom: 1px solid #e0e0e0; }
+.stats-row:hover { filter: brightness(0.96); }
+.stats-row.stats-win { background: #f1f8e9; }
+.stats-row.stats-lose { background: #fce4ec; }
+.stats-v { color: #2e7d32; font-weight: 600; }
+.stats-n { color: #f57f17; font-weight: 600; }
+.stats-d { color: #c62828; font-weight: 600; }
+.history-toggle { font-size: 11px; color: #1976d2; margin-left: 6px; user-select: none; }
+.history-row td { background: #f8f9fa; }
+.niveau-history { padding: 8px 12px; }
+.niveau-history-row { padding: 4px 0; font-size: 13px; border-bottom: 1px solid #eee; color: #555; }
+.niveau-history-row:last-child { border-bottom: none; }
+
+@media (max-width: 768px) {
+  .stats-table { font-size: 13px; }
+  .stats-table thead th, .stats-table tbody td { padding: 8px 8px; }
+}
