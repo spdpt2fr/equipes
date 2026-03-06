@@ -135,3 +135,64 @@ Ajouter :
 - `exporterStats()` appelable sans erreur
 - Toggle historique niveau : show/hide correct
 - Compatibilité import : ancien format (`gagnant_numero` numérique) et nouveau (`null`)
+
+
+---
+
+## 7. Re-notation des résultats de matchs (à implémenter)
+
+**Décisions validées** :
+- Correction nette : `correction = nouveau_delta - ancien_delta` appliqué sur le niveau actuel du joueur
+- Cascade : les sessions ultérieures du même club sont remises à `ajustements_appliques = false`
+- UX : bouton " Modifier résultats" visible sur toutes les sessions de l'historique
+
+### Fichiers à modifier : `assets/js/sessions.js`, `assets/css/components.css`
+
+### Tâches
+
+- [ ] **`calculerDeltaSession(session)`**  nouvelle fonction utilitaire
+  - Prend une session complète (avec `session_teams`, `session_players`, `match_results`)
+  - Applique exactement la même formule que `calculerAjustements()` mais depuis le snapshot `session_players.niveau`
+  - Retourne un objet `{ player_name: delta }` pour tous les joueurs de la session
+  - Réutilisable pour comparer ancien et nouveau delta
+
+- [ ] **`renoterResultats(sessionId)`**  point d'entrée UX
+  - Récupère la session depuis `window.AppCore.historiqueSessions`
+  - Calcule et mémorise l'ancien delta via `calculerDeltaSession()`
+  - Affiche l'UI de saisie des résultats (réutilise `afficherInterfaceResultats()`) dans un panneau sous la session card
+  - Si la session n'a pas encore de résultats : se comporte comme un "Saisir résultats"
+
+- [ ] **`sauvegarderRenotation(sessionId)`**  sauvegarde et correction
+  - DELETE + INSERT des nouveaux `match_results` (déjà idempotent dans `sauvegarderResultats`)
+  - Calcule le nouveau delta via `calculerDeltaSession()`
+  - Pour chaque joueur : `correction = nouveau_delta - ancien_delta`
+  - UPDATE `players_xxx.niveau += correction` (clampé 110, arrondi à 1 décimale)
+  - Marque la session : `resultats_saisis = true`, `ajustements_appliques = true`
+  - **Cascade** : récupère toutes les sessions du même club avec `date_session > session.date_session` ET `ajustements_appliques = true`  UPDATE `ajustements_appliques = false`
+  - Reload `chargerHistorique()`
+  - Toast : "Résultats corrigés. X session(s) ultérieure(s) remise(s) en attente."
+
+- [ ] **`afficherHistorique()`**  ajouter bouton Modifier
+  - Ajouter un bouton **" Modifier résultats"** (classe `btn-edit-outline`) sur **toutes** les session cards
+  - Le placer à côté du bouton supprimer (trash)
+  - Visible uniquement si `window.AppCore.isOnline`
+  - Appel : `window.AppSessions.renoterResultats(session.id)`
+
+- [ ] **`components.css`**  ajouter style bouton modifier
+  ```css
+  .btn-edit-outline { background: transparent; color: #1565c0; border: 1px solid #1565c0;
+    padding: 6px; border-radius: 8px; cursor: pointer; display: inline-flex;
+    align-items: center; transition: all 0.2s; }
+  .btn-edit-outline:hover { background: #1565c0; color: white; }
+  ```
+
+- [ ] **`window.AppSessions`**  exporter `renoterResultats`, `sauvegarderRenotation`, `calculerDeltaSession`
+
+### Points d'attention
+
+- `calculerDeltaSession()` doit reproduire **exactement** la formule de `calculerAjustements()` : `DELTA_BASE * (1 + (oppAvg - myAvg) / 10)` pour une victoire, inverse pour une défaite, 0 pour un nul
+- La correction nette préserve les ajustements des sessions intermédiaires légitimes
+- Tester : session avec ajust. appliqués  modifier  vérifier correction nette sur `players.niveau`
+- Tester cascade : 3 sessions en ordre, corriger la première  les 2 suivantes passent en attente
+- Tester session sans résultats (doit se comporter comme "Saisir résultats")
+- Le bouton "Modifier" ne doit pas apparaître en mode hors ligne (`isOnline = false`)

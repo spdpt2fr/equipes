@@ -5,6 +5,10 @@
 
 const DELTA_BASE = 0.15; // Ajustement de base par match
 
+// Variables mémoire pour la re-notation
+let _ancienDeltaRenotation = {};
+let _dateSessionRenotation = '';
+
 // === VALIDATION DE SESSION (sauvegarder les équipes comme soirée) ===
 async function validerSession() {
     if (window.AppCore.equipes.length === 0) {
@@ -580,6 +584,14 @@ function afficherHistorique() {
             `;
         }
 
+        if (window.AppCore.isOnline) {
+            html += `
+                <button onclick="window.AppSessions.renoterResultats(${session.id})" class="btn btn-edit-outline btn-sm" title="Modifier les résultats">
+                    <span class="material-icons">edit</span>
+                </button>
+            `;
+        }
+
         html += `
                 <button onclick="window.AppSessions.supprimerSession(${session.id})" class="btn btn-danger-outline btn-sm">
                     <span class="material-icons">delete</span>
@@ -842,6 +854,222 @@ async function importerMatchs() {
     reader.readAsText(fichier, 'utf-8');
 }
 
+// === CALCULER DELTA D'UNE SESSION (depuis snapshots en mémoire) ===
+function calculerDeltaSession(session) {
+    const teams = session.session_teams || [];
+    const results = session.match_results || [];
+
+    if (results.length === 0) return {};
+
+    const teamAvg = {};
+    teams.forEach(t => {
+        const players = t.session_players || [];
+        teamAvg[t.id] = players.length > 0
+            ? players.reduce((sum, p) => sum + p.niveau, 0) / players.length
+            : 0;
+    });
+
+    const deltas = {};
+
+    teams.forEach(team => {
+        (team.session_players || []).forEach(player => {
+            if (!player.player_id) return;
+
+            let totalDelta = 0;
+            let matchsJoues = 0;
+
+            results.forEach(result => {
+                let myTeamId = null;
+                let oppTeamId = null;
+
+                if (result.equipe1_id === team.id) {
+                    myTeamId = team.id;
+                    oppTeamId = result.equipe2_id;
+                } else if (result.equipe2_id === team.id) {
+                    myTeamId = team.id;
+                    oppTeamId = result.equipe1_id;
+                } else {
+                    return;
+                }
+
+                const myAvg = teamAvg[myTeamId] || 5;
+                const oppAvg = teamAvg[oppTeamId] || 5;
+                const strengthDiff = (oppAvg - myAvg) / 10;
+
+                if (result.gagnant_id == null) return; // nul : pas de delta
+
+                if (result.gagnant_id === myTeamId) {
+                    totalDelta += DELTA_BASE * (1 + strengthDiff);
+                } else {
+                    totalDelta -= DELTA_BASE * (1 - strengthDiff);
+                }
+                matchsJoues++;
+            });
+
+            if (matchsJoues === 0) return;
+
+            deltas[player.player_id] = {
+                player_id: player.player_id,
+                player_name: player.player_name,
+                delta: totalDelta
+            };
+        });
+    });
+
+    return deltas;
+}
+
+// === RE-NOTATION : AFFICHER L'INTERFACE ===
+async function renoterResultats(sessionId) {
+    if (!window.AppCore.isOnline) {
+        window.AppCore.showToast('Connexion requise pour modifier les résultats', true);
+        return;
+    }
+
+    const session = (window.AppCore.historiqueSessions || []).find(s => s.id === sessionId);
+    if (!session) {
+        window.AppCore.showToast('Session introuvable', true);
+        return;
+    }
+
+    // Mémoriser l'ancien delta avant toute modification
+    _ancienDeltaRenotation = calculerDeltaSession(session);
+    _dateSessionRenotation = session.date_session;
+
+    // Préparer les équipes ordonnées
+    const teams = (session.session_teams || []).sort((a, b) => a.numero_equipe - b.numero_equipe);
+    const teamIds = teams.map(t => t.id);
+
+    // Afficher l'interface de saisie dans resultatsContainer
+    afficherInterfaceResultats(sessionId, teamIds);
+
+    const container = document.getElementById('resultatsContainer');
+    if (!container) return;
+
+    // Remplacer le bouton de sauvegarde
+    const saveBtn = container.querySelector(`button[onclick*="sauvegarderResultats"]`);
+    if (saveBtn) {
+        saveBtn.setAttribute('onclick', `window.AppSessions.sauvegarderRenotation(${sessionId})`);
+        saveBtn.innerHTML = '<span class="material-icons">save</span> Corriger les résultats';
+    }
+
+    // Pré-cocher les résultats existants
+    const existingResults = session.match_results || [];
+    existingResults.forEach(r => {
+        const radios = container.querySelectorAll('input[type="radio"][data-eq1][data-eq2]');
+        radios.forEach(radio => {
+            const eq1 = parseInt(radio.dataset.eq1);
+            const eq2 = parseInt(radio.dataset.eq2);
+            if ((eq1 === r.equipe1_id && eq2 === r.equipe2_id) ||
+                (eq1 === r.equipe2_id && eq2 === r.equipe1_id)) {
+                const target = r.gagnant_id === null ? 'draw' : String(r.gagnant_id);
+                if (radio.value === target) radio.checked = true;
+            }
+        });
+    });
+
+    container.scrollIntoView({ behavior: 'smooth' });
+}
+
+// === RE-NOTATION : SAUVEGARDER ET CORRIGER ===
+async function sauvegarderRenotation(sessionId) {
+    try {
+        if (!window.AppCore.isOnline) return;
+
+        const supabase = window.AppCore.supabaseClient;
+        const container = document.getElementById('resultatsContainer');
+        const radios = container.querySelectorAll('.results-grid input[type="radio"]:checked');
+        const resultats = [];
+
+        radios.forEach(radio => {
+            if (radio.value === 'skip') return;
+            resultats.push({
+                session_id: sessionId,
+                equipe1_id: parseInt(radio.dataset.eq1),
+                equipe2_id: parseInt(radio.dataset.eq2),
+                gagnant_id: radio.value === 'draw' ? null : parseInt(radio.value, 10)
+            });
+        });
+
+        // Supprimer anciens résultats et insérer nouveaux
+        const { error: errDelete } = await supabase.from('match_results').delete().eq('session_id', sessionId);
+        if (errDelete) throw errDelete;
+
+        if (resultats.length > 0) {
+            const { error: errInsert } = await supabase.from('match_results').insert(resultats);
+            if (errInsert) throw errInsert;
+        }
+
+        // Mettre à jour l'état de la session
+        await supabase.from('sessions').update({
+            resultats_saisis: resultats.length > 0,
+            ajustements_appliques: true
+        }).eq('id', sessionId);
+
+        // Recharger la session depuis la DB pour calculer le nouveau delta
+        const { data: updatedSession, error: errLoad } = await supabase
+            .from('sessions')
+            .select('*, session_teams(*, session_players(*)), match_results(*)')
+            .eq('id', sessionId)
+            .single();
+        if (errLoad) throw errLoad;
+
+        const nouveauDelta = calculerDeltaSession(updatedSession);
+        const ancienDelta = _ancienDeltaRenotation;
+
+        // Appliquer la correction nette (nouveau_delta - ancien_delta) sur le niveau actuel
+        const tableName = window.AppStorage.getTableName();
+        for (const playerId of Object.keys(nouveauDelta)) {
+            const nv = nouveauDelta[playerId];
+            const anc = ancienDelta[playerId] || { delta: 0 };
+            const correction = nv.delta - anc.delta;
+
+            if (Math.abs(correction) < 0.001) continue;
+            if (!nv.player_id) continue;
+
+            const joueurLocal = (window.AppCore.joueurs || []).find(j => j.id === nv.player_id);
+            if (!joueurLocal) continue;
+
+            const nouveauNiveau = Math.max(1, Math.min(10, parseFloat((joueurLocal.niveau + correction).toFixed(1))));
+            const { error: errUpdate } = await supabase.from(tableName).update({ niveau: nouveauNiveau }).eq('id', nv.player_id);
+            if (errUpdate) throw errUpdate;
+        }
+
+        // Cascade : remettre en attente les sessions ultérieures avec ajustements appliqués
+        const { data: sessionsUlterieures, error: errCascade } = await supabase
+            .from('sessions')
+            .select('id')
+            .eq('club_id', window.AppCore.clubActuel.id)
+            .eq('ajustements_appliques', true)
+            .gt('date_session', _dateSessionRenotation)
+            .neq('id', sessionId);
+
+        let nbCascade = 0;
+        if (!errCascade && sessionsUlterieures && sessionsUlterieures.length > 0) {
+            nbCascade = sessionsUlterieures.length;
+            await supabase.from('sessions')
+                .update({ ajustements_appliques: false })
+                .in('id', sessionsUlterieures.map(s => s.id));
+        }
+
+        // Réinitialiser la mémoire
+        _ancienDeltaRenotation = {};
+        _dateSessionRenotation = '';
+
+        let msg = '✅ Résultats corrigés !';
+        if (nbCascade > 0) msg += ` ${nbCascade} session(s) ultérieure(s) remise(s) en attente.`;
+        window.AppCore.showToast(msg);
+
+        if (container) container.innerHTML = '';
+        await window.AppStorage.chargerJoueurs();
+        await chargerHistorique();
+
+    } catch (error) {
+        console.error('Erreur correction résultats:', error);
+        window.AppCore.showToast('Erreur: ' + error.message, true);
+    }
+}
+
 // === STATISTIQUES JOUEURS ===
 function calculerStats() {
     const stats = {};
@@ -1027,5 +1255,8 @@ window.AppSessions = {
     importerMatchs,
     calculerStats,
     afficherStats,
-    exporterStats
+    exporterStats,
+    calculerDeltaSession,
+    renoterResultats,
+    sauvegarderRenotation
 };
