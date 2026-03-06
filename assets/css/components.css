@@ -119,3 +119,12 @@
   .stats-table { font-size: 13px; }
   .stats-table thead th, .stats-table tbody td { padding: 8px 8px; }
 }
+
+/* === TRI JOUEURS (segmented control) === */
+.tri-toggle { display: flex; gap: 4px; }
+.tri-btn { flex: 1; padding: 6px 12px; border: 1px solid #1976d2; border-radius: 8px;
+  background: transparent; color: #1976d2; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+.tri-btn:hover { background: #e3f0fb; }
+.tri-btn.active { background: #1976d2; color: white; }
+@media (max-width: 480px) { .tri-btn { padding: 6px 8px; font-size: 12px; } }

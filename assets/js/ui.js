@@ -33,9 +33,11 @@ function trierJoueurs(joueursListe) {
     }
 }
 
-function toggleTriJoueurs() {
-    window.AppCore.triJoueurs = window.AppCore.triJoueurs === 'niveau' ? 'alpha' : 'niveau';
-    document.getElementById('sortText').textContent = window.AppCore.triJoueurs === 'alpha' ? 'Alphabétique' : 'Par niveau';
+function toggleTriJoueurs(tri) {
+    window.AppCore.triJoueurs = tri || (window.AppCore.triJoueurs === 'niveau' ? 'alpha' : 'niveau');
+    document.querySelectorAll('.tri-btn').forEach(btn =>
+        btn.classList.toggle('active', btn.dataset.tri === window.AppCore.triJoueurs)
+    );
     afficherJoueurs();
 }
 
@@ -191,12 +193,15 @@ function attachEventListeners() {
         console.log('✅ Event listener effacer recherche attaché');
     }
 
-    // Bouton tri
-    const sortBtn = document.getElementById('sortToggle');
-    if (sortBtn) {
-        sortBtn.addEventListener('click', toggleTriJoueurs);
-        console.log('✅ Event listener tri attaché');
-    }
+    // Boutons tri (segmented control)
+    document.querySelectorAll('.tri-btn').forEach(btn => {
+        btn.addEventListener('click', () => toggleTriJoueurs(btn.dataset.tri));
+    });
+    // Initialiser l'état actif selon triJoueurs courant
+    document.querySelectorAll('.tri-btn').forEach(btn =>
+        btn.classList.toggle('active', btn.dataset.tri === (window.AppCore.triJoueurs || 'alpha'))
+    );
+    console.log('✅ Event listeners tri attachés');
 
     // Bouton créer équipes (ID CORRIGÉ : creerBtn)
     const createTeamsBtn = document.getElementById('creerBtn');

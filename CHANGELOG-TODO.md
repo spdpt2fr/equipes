@@ -251,3 +251,55 @@ Ajouter :
   - Opp. 2 niveaux (`myAvg=7, oppAvg=5`) : `expected  0.76`  victoire `+0.07`, défaite `0.23`
 - **Pas de modification CSS** requise pour cette feature
 - **Pas de modification Supabase**  logique purement JS côté client
+
+---
+
+## 9. Toggle tri joueurs (alphabétique / niveau décroissant)
+
+**Décision validée** : toggle visible en haut de la liste joueurs (onglet Gestion), bascule entre tri alpha et tri niveau décroissant, état persisté dans `window.AppCore.triJoueurs`.
+
+### Fichiers à modifier : `index.html`, `assets/js/ui.js`, `assets/css/components.css`
+
+### Tâches
+
+- [x] `index.html`  ajouter le toggle au-dessus de `#joueursContainer` (dans `#section-gestion`)
+  - Deux boutons segmentés : "AZ" (`data-tri="alpha"`) et "Niveau " (`data-tri="niveau"`)
+  - Placer après la barre de recherche, avant la liste des joueurs
+  - Le bouton actif reçoit la classe `active`
+  - HTML :
+    ```html
+    <div class="tri-toggle">
+      <button class="tri-btn active" data-tri="alpha">A  Z</button>
+      <button class="tri-btn" data-tri="niveau">Niveau </button>
+    </div>
+    ```
+
+- [x] `assets/js/ui.js`  `afficherJoueurs()` : vérifier et compléter le tri
+  - Si `triJoueurs === 'alpha'` : trier par `nom` (`localeCompare`)
+  - Si `triJoueurs === 'niveau'` : trier par `niveau` décroissant, puis `nom` en cas d'égalité
+  - Trier sur une copie du tableau  ne pas muter `window.AppCore.joueurs`
+
+- [x] `assets/js/ui.js`  `attachEventListeners()` : brancher le toggle
+  - Écouter `click` sur `.tri-btn`
+  - `window.AppCore.triJoueurs = btn.dataset.tri`
+  - Mettre à jour la classe `active` sur les boutons
+  - Appeler `afficherJoueurs()`
+  - Initialiser le bouton actif au chargement depuis `window.AppCore.triJoueurs`
+
+- [x] `assets/css/components.css`  ajouter style `.tri-toggle` / `.tri-btn`
+  ```css
+  .tri-toggle { display: flex; gap: 4px; margin-bottom: 8px; }
+  .tri-btn { flex: 1; padding: 6px 12px; border: 1px solid #1976d2; border-radius: 8px;
+    background: transparent; color: #1976d2; font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.2s; }
+  .tri-btn:hover { background: #e3f0fb; }
+  .tri-btn.active { background: #1976d2; color: white; }
+  ```
+
+### Points d'attention
+
+- **Initialisation** : lire `window.AppCore.triJoueurs` dans `attachEventListeners()` pour activer le bon bouton dès le chargement (valeur par défaut `'alpha'`)
+- **Changement de club** : `changerClub()`  `afficherJoueurs()` relit `triJoueurs` automatiquement  aucune action supplémentaire
+- **Recherche combinée** : le tri s'applique APRÈS le filtre `searchTerm` dans `afficherJoueurs()`  vérifier l'ordre filtre  tri  rendu
+- **Pas de doublon** : `triJoueurs` existe déjà dans `window.AppCore`  ne pas redéclarer
+- **Pas d'export supplémentaire** : `afficherJoueurs` et `attachEventListeners` sont déjà dans `window.AppUI`
