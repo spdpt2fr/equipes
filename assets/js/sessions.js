@@ -8,10 +8,12 @@ const ELO_DIVISOR = 4;   // Diviseur d'échelle (adapté aux niveaux 1-10)
 
 /**
  * Calcule le delta Elo pour une équipe sur un match.
- * @param {number} myAvg   - Niveau moyen de l'équipe
- * @param {number} oppAvg  - Niveau moyen de l'adversaire
+ * @private - exposée dans window.AppSessions uniquement pour les tests
+ * @param {number} myAvg    - Niveau moyen de l'équipe
+ * @param {number} oppAvg   - Niveau moyen de l'adversaire
  * @param {number} resultat - 1=victoire, 0=défaite, 0.5=nul
  * @returns {number} delta à appliquer (positif=gain, négatif=perte)
+ * @note Les nuls (0.5) produisent un delta non nul proportionnel à l'écart de force
  */
 function _calculerDeltaMatch(myAvg, oppAvg, resultat) {
     const expected = 1 / (1 + Math.pow(10, (oppAvg - myAvg) / ELO_DIVISOR));
@@ -320,6 +322,7 @@ async function calculerAjustements(sessionId) {
                     const myAvg = teamAvg[myTeamId] || 5;
                     const oppAvg = teamAvg[oppTeamId] || 5;
 
+                    // Nul=0.5 → petit delta ± selon force adverse (comportement Elo, ≠ ancienne formule DELTA_BASE où nul=0)
                     const res = result.gagnant_id == null ? 0.5
                               : result.gagnant_id === myTeamId ? 1 : 0;
                     totalDelta += _calculerDeltaMatch(myAvg, oppAvg, res);
@@ -374,8 +377,9 @@ function afficherAjustements(sessionId, ajustements) {
                 Ajustements proposés
             </h2>
             <p class="ajustements-info">
-                Basé sur les résultats : victoire contre une équipe forte = plus gros bonus, 
+                Basé sur les résultats : victoire contre une équipe forte = plus gros bonus,
                 défaite contre une équipe faible = plus gros malus.
+                Les matchs nuls entraînent un léger ajustement selon la force adverse.
             </p>
             <div class="ajustements-list">
     `;
@@ -925,6 +929,7 @@ function calculerDeltaSession(session) {
                 const myAvg = teamAvg[myTeamId] || 5;
                 const oppAvg = teamAvg[oppTeamId] || 5;
 
+                // Nul=0.5 → petit delta ± selon force adverse (comportement Elo, ≠ ancienne formule DELTA_BASE où nul=0)
                 const res = result.gagnant_id == null ? 0.5
                           : result.gagnant_id === myTeamId ? 1 : 0;
                 totalDelta += _calculerDeltaMatch(myAvg, oppAvg, res);
