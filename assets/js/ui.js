@@ -196,11 +196,8 @@ function attachEventListeners() {
     // Boutons tri (segmented control)
     document.querySelectorAll('.tri-btn').forEach(btn => {
         btn.addEventListener('click', () => toggleTriJoueurs(btn.dataset.tri));
+        btn.classList.toggle('active', btn.dataset.tri === (window.AppCore.triJoueurs || 'alpha'));
     });
-    // Initialiser l'état actif selon triJoueurs courant
-    document.querySelectorAll('.tri-btn').forEach(btn =>
-        btn.classList.toggle('active', btn.dataset.tri === (window.AppCore.triJoueurs || 'alpha'))
-    );
     console.log('✅ Event listeners tri attachés');
 
     // Bouton créer équipes (ID CORRIGÉ : creerBtn)

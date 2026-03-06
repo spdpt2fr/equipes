@@ -127,4 +127,5 @@
   cursor: pointer; transition: all 0.2s; white-space: nowrap; }
 .tri-btn:hover { background: #e3f0fb; }
 .tri-btn.active { background: #1976d2; color: white; }
+.tri-btn.active:hover { background: #1565c0; }
 @media (max-width: 480px) { .tri-btn { padding: 6px 8px; font-size: 12px; } }
