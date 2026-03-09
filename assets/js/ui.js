@@ -101,6 +101,9 @@ function afficherJoueurs() {
         const originalIndex = window.AppCore.joueurs.indexOf(j);
         const playerCard = document.createElement('div');
         playerCard.className = `player-card ${!j.actif ? 'inactive' : ''}`;
+        const nomSafe = window.AppCore.escapeHtml(j.nom);
+        const niveauSafe = window.AppCore.escapeHtml(j.niveau);
+        const groupeSafe = window.AppCore.escapeHtml(j.groupe || '');
 
         playerCard.innerHTML = `
             <div class="checkbox-wrapper">
@@ -108,14 +111,14 @@ function afficherJoueurs() {
             </div>
             <div class="player-info">
                 <div class="player-field">
-                    <input type="text" value="${j.nom}" class="player-name-input" 
+                    <input type="text" value="${nomSafe}" class="player-name-input" 
                            onchange="window.AppPlayers.modifierJoueur(${originalIndex}, 'nom', this.value)"
                            placeholder="Nom du joueur">
                 </div>
                 <div class="player-field">
                     <div class="niveau-wrapper">
                         <span class="niveau-label">Niv.</span>
-                        <input type="number" value="${j.niveau}" min="1" max="10" step="0.1" 
+                        <input type="number" value="${niveauSafe}" min="1" max="10" step="0.1" 
                                onchange="window.AppPlayers.modifierJoueur(${originalIndex}, 'niveau', this.value)"
                                placeholder="1-10" title="Niveau de 1 à 10">
                     </div>
@@ -132,7 +135,7 @@ function afficherJoueurs() {
 </select>
                 </div>
                 <div class="player-field">
-                    <input type="number" value="${j.groupe || ''}" min="1" 
+                    <input type="number" value="${groupeSafe}" min="1" 
                            onchange="window.AppPlayers.modifierJoueur(${originalIndex}, 'groupe', this.value)"
                            placeholder="Groupe" title="Numéro de groupe (optionnel)">
                 </div>

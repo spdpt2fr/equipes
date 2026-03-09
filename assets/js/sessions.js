@@ -1050,22 +1050,26 @@ async function sauvegarderRenotation(sessionId) {
         const nouveauDelta = calculerDeltaSession(updatedSession);
         const ancienDelta = _ancienDeltaRenotation;
 
-        // Appliquer la correction nette (nouveau_delta - ancien_delta) sur le niveau actuel
+        // Appliquer la correction nette (nouveau_delta - ancien_delta) sur le niveau actuel.
+        // Utiliser l'union des joueurs pour aussi annuler un ancien delta qui disparaît après re-notation.
         const tableName = window.AppStorage.getTableName();
-        for (const playerId of Object.keys(nouveauDelta)) {
-            const nv = nouveauDelta[playerId];
+        const allPlayerIds = new Set([...Object.keys(ancienDelta), ...Object.keys(nouveauDelta)]);
+        for (const playerId of allPlayerIds) {
+            const nv = nouveauDelta[playerId] || { delta: 0 };
             const anc = ancienDelta[playerId] || { delta: 0 };
             const correction = nv.delta - anc.delta;
+            const playerRef = nv.player_id || anc.player_id;
 
             if (Math.abs(correction) < 0.001) continue;
-            if (!nv.player_id) continue;
+            if (!playerRef) continue;
 
-            const joueurLocal = (window.AppCore.joueurs || []).find(j => j.id === nv.player_id);
+            const joueurLocal = (window.AppCore.joueurs || []).find(j => j.id === playerRef);
             if (!joueurLocal) continue;
 
             const nouveauNiveau = Math.max(1, Math.min(10, parseFloat((joueurLocal.niveau + correction).toFixed(1))));
-            const { error: errUpdate } = await supabase.from(tableName).update({ niveau: nouveauNiveau }).eq('id', nv.player_id);
+            const { error: errUpdate } = await supabase.from(tableName).update({ niveau: nouveauNiveau }).eq('id', playerRef);
             if (errUpdate) throw errUpdate;
+            joueurLocal.niveau = nouveauNiveau;
         }
 
         // Cascade : remettre en attente les sessions ultérieures avec ajustements appliqués

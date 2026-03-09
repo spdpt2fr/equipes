@@ -25,6 +25,52 @@ describe('AppCore - escapeHtml()', function () {
 });
 
 // ===================================================================
+// TESTS - afficherJoueurs() (sanitization XSS)
+// ===================================================================
+describe('AppUI - afficherJoueurs()', function () {
+  beforeEach(function () {
+    let card = document.getElementById('listeJoueursCard');
+    if (!card) {
+      card = document.createElement('div');
+      card.id = 'listeJoueursCard';
+      document.body.appendChild(card);
+    }
+
+    let list = document.getElementById('listeJoueurs');
+    if (!list) {
+      list = document.createElement('div');
+      list.id = 'listeJoueurs';
+      document.body.appendChild(list);
+    }
+
+    let stats = document.getElementById('searchStats');
+    if (!stats) {
+      stats = document.createElement('div');
+      stats.id = 'searchStats';
+      document.body.appendChild(stats);
+    }
+
+    window.AppCore.searchTerm = '';
+    window.AppCore.triJoueurs = 'alpha';
+  });
+
+  it('n injecte pas de balise HTML depuis un nom joueur', function () {
+    window.AppCore.joueurs = [{
+      nom: '"><img src=x onerror=alert(1)>',
+      niveau: 5,
+      poste: 'avant',
+      groupe: null,
+      actif: true
+    }];
+
+    window.AppUI.afficherJoueurs();
+
+    const list = document.getElementById('listeJoueurs');
+    chai.expect(list.querySelector('img')).to.equal(null);
+    chai.expect(list.querySelector('script')).to.equal(null);
+  });
+});
+// ===================================================================
 describe('Module équipes - creerEquipes()', function() {
   beforeEach(function() {
     // Préparer le DOM minimal attendu par les fonctions
@@ -322,3 +368,4 @@ describe('AppSessions - _calculerDeltaMatch()', function () {
     chai.expect(isFinite(delta)).to.be.true;
   });
 });
+
