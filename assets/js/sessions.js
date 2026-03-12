@@ -641,6 +641,12 @@ function afficherHistorique() {
 
 // === RECALCULER ET AFFICHER AJUSTEMENTS (depuis historique) ===
 async function recalculerEtAfficherAjustements(sessionId) {
+    // Depuis l'onglet Historique, les ajustements s'affichent dans #resultatsContainer
+    // situé dans l'onglet Gestion : basculer pour rendre le contenu visible.
+    if (window.AppUI && window.AppUI.switchTab) {
+        window.AppUI.switchTab('gestion');
+    }
+
     const container = document.getElementById('resultatsContainer');
     if (container) container.innerHTML = '';
     const ajustements = await calculerAjustements(sessionId);
