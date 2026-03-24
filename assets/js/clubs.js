@@ -6,83 +6,82 @@
 // === CHANGEMENT DE CLUB ===
 async function changerClub(nomClub) {
     try {
-        // Si pas de paramètre, récupérer depuis le select
         if (!nomClub) {
             const selectClub = document.getElementById('clubSelect');
-            nomClub = selectClub.value;
-        }
-        
-        window.AppCore.clubActuel = window.AppCore.clubs.find(c => c.nom.toLowerCase() === nomClub);
-        
-        if (!window.AppCore.clubActuel) {
-            throw new Error(`Club "${nomClub}" non trouvé`);
+            nomClub = selectClub ? selectClub.value : null;
         }
 
-        // Réinitialiser les données du club précédent
+        window.AppCore.clubActuel = window.AppCore.clubs.find(c => c.nom.toLowerCase() === nomClub);
+
+        if (!window.AppCore.clubActuel) {
+            throw new Error(`Club "${nomClub}" non trouve`);
+        }
+
         window.AppCore.equipes = [];
         window.AppCore.sessionValidee = null;
+
         const equipesContainer = document.getElementById('equipesContainer');
         if (equipesContainer) equipesContainer.innerHTML = '';
+
         const resultatsContainer = document.getElementById('resultatsContainer');
         if (resultatsContainer) resultatsContainer.innerHTML = '';
 
         window.AppStorage.sauvegarderClub(nomClub);
-        
-        // Recharger les joueurs pour le nouveau club
+
         await window.AppStorage.chargerJoueurs();
-        
-        // Rafraîchir l'affichage automatiquement
-        if (window.afficherJoueurs) {
-            window.afficherJoueurs();
-        }        
-        // Charger l'historique du nouveau club
+
+        if (window.AppUI && window.AppUI.appliquerPermissionsUI) {
+            window.AppUI.appliquerPermissionsUI();
+        }
+
+        if (window.afficherJoueurs) window.afficherJoueurs();
+
         if (window.AppSessions && window.AppSessions.chargerHistorique) {
-            window.AppSessions.chargerHistorique();
-        }        
-        // Mettre à jour le statut
-        window.AppCore.updateStatus(`🟢 Connecté (${window.AppCore.joueurs.length} joueurs - ${window.AppCore.clubActuel.nom})`, 'connected');
-        
-        window.AppCore.showToast(`Basculé vers le club ${window.AppCore.clubActuel.nom}`);
-        
-        console.log(`✅ Club changé vers: ${window.AppCore.clubActuel.nom} (${window.AppCore.joueurs.length} joueurs)`);
-        
+            await window.AppSessions.chargerHistorique();
+        }
+
+        window.AppCore.updateStatus(`Connecte (${window.AppCore.joueurs.length} joueurs - ${window.AppCore.clubActuel.nom})`, 'connected');
+        window.AppCore.showToast(`Bascule vers le club ${window.AppCore.clubActuel.nom}`);
+        console.log(`Club change vers ${window.AppCore.clubActuel.nom}`);
     } catch (error) {
         console.error('Erreur changement club:', error);
-        window.AppCore.showToast('Erreur lors du changement de club: ' + error.message, true);
+        window.AppCore.showToast('Erreur changement de club: ' + error.message, true);
     }
 }
 
-// === INITIALISATION COMPLÈTE ===
+// === INITIALISATION COMPLETE ===
 async function init() {
     try {
-        window.AppCore.updateStatus('🔄 Connexion...', 'connecting');
+        window.AppCore.updateStatus('Connexion...', 'connecting');
         console.log('Initialisation...');
-        
-        // Créer client Supabase
+
         window.AppCore.supabaseClient = supabase.createClient(window.AppCore.SUPABASE_URL, window.AppCore.SUPABASE_ANON_KEY);
-        console.log('Client Supabase créé');
-        
-        // Charger les clubs en premier
+        console.log('Client Supabase cree');
+
+        await window.AppStorage.chargerProfilUtilisateur();
         await window.AppStorage.chargerClubs();
-        console.log('Clubs chargés:', window.AppCore.clubs);
-        
-        // Charger les joueurs pour le club actuel
         await window.AppStorage.chargerJoueurs();
-        
+
         window.AppCore.isOnline = true;
-        window.AppCore.updateStatus(`🟢 Connecté (${window.AppCore.joueurs.length} joueurs - ${window.AppCore.clubActuel.nom})`, 'connected');
-        console.log('Connexion OK, joueurs chargés:', window.AppCore.joueurs.length);
-        
+
+        if (window.AppUI && window.AppUI.appliquerPermissionsUI) {
+            window.AppUI.appliquerPermissionsUI();
+        }
+
+        const roleTag = window.AppCore.currentRole === 'admin' ? 'admin' : 'operateur';
+        window.AppCore.updateStatus(`Connecte (${window.AppCore.joueurs.length} joueurs - ${window.AppCore.clubActuel.nom} - ${roleTag})`, 'connected');
+        console.log('Connexion OK, joueurs charges:', window.AppCore.joueurs.length);
+
         if (window.afficherJoueurs) window.afficherJoueurs();
-        window.AppCore.showToast(`Connexion réussie ! Club: ${window.AppCore.clubActuel.nom}`);        
-        // Charger l'historique des soir\u00e9es
+        window.AppCore.showToast(`Connexion reussie ! Club: ${window.AppCore.clubActuel.nom} (${roleTag})`);
+
         if (window.AppSessions && window.AppSessions.chargerHistorique) {
-            window.AppSessions.chargerHistorique();
-        }        
+            await window.AppSessions.chargerHistorique();
+        }
     } catch (error) {
         console.error('Erreur connexion:', error);
         window.AppCore.isOnline = false;
-        window.AppCore.updateStatus('🔴 Hors ligne', 'offline');
+        window.AppCore.updateStatus('Hors ligne', 'offline');
         window.AppCore.showToast('Mode hors ligne - ' + (error.message || 'Connexion impossible'), true);
     }
 }

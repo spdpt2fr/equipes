@@ -303,3 +303,70 @@ Ajouter :
 - **Recherche combinée** : le tri s'applique APRÈS le filtre `searchTerm` dans `afficherJoueurs()`  vérifier l'ordre filtre  tri  rendu
 - **Pas de doublon** : `triJoueurs` existe déjà dans `window.AppCore`  ne pas redéclarer
 - **Pas d'export supplémentaire** : `afficherJoueurs` et `attachEventListeners` sont déjà dans `window.AppUI`
+
+---
+
+## 10. Ranking Stats en 3/1/0 (Pts prioritaire)
+
+**Décisions validées** :
+- Nouveau ranking Stats basé sur `points = victoires * 3 + nuls`
+- `historiqueNiveau` reste inchangé dans `calculerStats()`
+- La métrique principale affichée et exportée devient **Pts** ; `%V` reste secondaire si conservé dans le tableau
+- Le tri final doit être déterministe : points décroissants d'abord, puis départages stables
+- `assets/css/components.css` ne doit être modifié que si le tableau devient moins lisible après ajout/remplacement de colonne
+
+### Fichiers à modifier : `assets/js/sessions.js`, `tests/tests.js`, `assets/css/components.css` si nécessaire
+
+### Tâches
+
+- [ ] `assets/js/sessions.js`  `calculerStats()` : ajouter la métrique points sans casser les stats existantes
+  - Calculer `points = victoires * 3 + nuls` dans l'objet agrégé retourné pour chaque joueur
+  - Conserver `victoires`, `nuls`, `defaites`, `matchs`, `pct` et `historiqueNiveau` pour compatibilité UI/export/tests
+  - Ne pas modifier la construction de `historiqueNiveau[]`
+
+- [ ] `assets/js/sessions.js`  `calculerStats()` : remplacer le tri final par un ranking Pts d'abord
+  - Remplacer le `.sort()` actuel basé sur `pct` par un tri déterministe : `points` décroissants, puis `pct` décroissant, puis `matchs` décroissants, puis `nom.localeCompare(..., 'fr')`
+  - Vérifier qu'un nul départage correctement devant une défaite à volume de matchs équivalent
+
+- [ ] `assets/js/sessions.js`  `afficherStats()` : faire de Pts la métrique principale du tableau
+  - Mettre à jour l'en-tête pour afficher `Pts` comme colonne de ranking prioritaire
+  - Réordonner les cellules pour aligner l'affichage sur le nouveau tri et l'export
+  - Vérifier les valeurs de `colspan` et la ligne d'historique repliée après changement de colonnes
+  - Mettre à jour tout libellé textuel faisant encore référence à `%V` comme indicateur principal
+
+- [ ] `assets/js/sessions.js`  `afficherStats()` : aligner la coloration des lignes avec la métrique principale
+  - Remplacer la logique `rowClass` basée uniquement sur `pct`, devenue incohérente avec un ranking par points
+  - Soit basculer la coloration sur une logique liée aux points, soit neutraliser la coloration si aucun seuil métier clair n'est retenu
+  - Éviter un état où l'ordre du tableau dit "Pts" mais la couleur dit encore "%V"
+
+- [ ] `assets/js/sessions.js`  `exporterStats()` : exporter Pts et garder l'ordre de colonnes cohérent avec l'UI
+  - Ajouter la colonne `Points` au CSV exporté
+  - Aligner l'ordre des colonnes sur celui affiché par `afficherStats()`
+  - Conserver le champ `Historique niveau` au format actuel
+  - Vérifier que le BOM UTF-8 et le nom de fichier existants restent inchangés
+
+- [ ] `tests/tests.js`  ajouter une suite dédiée au ranking 3/1/0 dans les stats
+  - Tester que `calculerStats()` calcule bien `points = victoires * 3 + nuls`
+  - Tester que le tri final classe d'abord par points, puis applique les départages déterministes attendus
+  - Couvrir un cas métier simple : un joueur avec `1V 0N 1D` passe devant un joueur avec `0V 2N 0D`
+
+- [ ] `tests/tests.js`  ajouter un test de rendu minimal pour `afficherStats()`
+  - Vérifier que le tableau rendu affiche une colonne ou cellule `Pts`
+  - Vérifier que la ligne détaillée d'historique utilise toujours le bon `colspan`
+  - Vérifier que le rendu ne dépend pas d'une coloration `%V` obsolète pour rester cohérent
+
+- [ ] `tests/tests.js`  ajouter un test d'export minimal pour `exporterStats()`
+  - Vérifier que le CSV contient la colonne `Points`
+  - Vérifier que l'ordre des colonnes exportées correspond à l'ordre retenu dans l'UI
+
+- [ ] `assets/css/components.css`  n'ajouter un ajustement que si le tableau stats devient illisible
+  - Ajuster seulement la largeur, l'alignement ou le comportement responsive des colonnes stats si l'ajout de `Pts` dégrade la lecture
+  - Ne pas modifier les styles stats existants sans besoin constaté dans le rendu
+
+### Points d'attention
+
+- **Compatibilité fonctionnelle** : `pct` peut rester calculé pour information, mais il ne doit plus piloter le ranking principal ni contredire la hiérarchie visuelle
+- **Cohérence UI / export** : mêmes colonnes, même ordre logique, même notion de métrique principale entre tableau HTML et CSV
+- **Départages** : documenter dans le code l'ordre exact retenu pour éviter les régressions silencieuses au prochain ajustement du ranking
+- **Colspan** : la ligne d'historique détaillée dans `afficherStats()` doit suivre automatiquement le nombre réel de colonnes après ajout/remplacement de `Pts`
+- **CSS optionnel** : si aucun problème de lisibilité n'apparaît, ne pas ouvrir un chantier visuel inutile dans `assets/css/components.css`

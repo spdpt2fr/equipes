@@ -303,6 +303,217 @@ describe('Sessions - afficherHistorique() avec match nul', function () {
 });
 
 // ===================================================================
+// TESTS - Ranking stats 3/1/0
+// ===================================================================
+describe('AppSessions - stats ranking 3/1/0', function () {
+  function ensureElement(id) {
+    let el = document.getElementById(id);
+    if (!el) {
+      el = document.createElement('div');
+      el.id = id;
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+
+  beforeEach(function () {
+    ensureElement('statsContainer').innerHTML = '';
+    ensureElement('historiqueContainer').innerHTML = '';
+    window.AppCore.isOnline = false;
+    window.AppCore.clubActuel = { id: 1, nom: 'Test Club' };
+    window.AppCore.historiqueSessions = [
+      {
+        id: 101,
+        date_session: '2026-03-01',
+        session_teams: [
+          {
+            id: 1001,
+            numero_equipe: 1,
+            session_players: [
+              { player_name: 'Alice', niveau: 5 },
+              { player_name: 'Bernard', niveau: 6 },
+              { player_name: 'Claire', niveau: 7 }
+            ]
+          },
+          {
+            id: 1002,
+            numero_equipe: 2,
+            session_players: [
+              { player_name: 'David', niveau: 4 }
+            ]
+          }
+        ],
+        match_results: [
+          { equipe1_id: 1001, equipe2_id: 1002, gagnant_id: 1001 }
+        ]
+      },
+      {
+        id: 102,
+        date_session: '2026-03-08',
+        session_teams: [
+          {
+            id: 1003,
+            numero_equipe: 1,
+            session_players: [
+              { player_name: 'Alice', niveau: 5.5 },
+              { player_name: 'Claire', niveau: 7.2 },
+              { player_name: 'David', niveau: 4.4 }
+            ]
+          },
+          {
+            id: 1004,
+            numero_equipe: 2,
+            session_players: [
+              { player_name: 'Bernard', niveau: 6.1 }
+            ]
+          }
+        ],
+        match_results: [
+          { equipe1_id: 1003, equipe2_id: 1004, gagnant_id: null }
+        ]
+      },
+      {
+        id: 103,
+        date_session: '2026-03-15',
+        session_teams: [
+          {
+            id: 1005,
+            numero_equipe: 1,
+            session_players: [
+              { player_name: 'Alice', niveau: 5.8 }
+            ]
+          },
+          {
+            id: 1006,
+            numero_equipe: 2,
+            session_players: [
+              { player_name: 'Bernard', niveau: 6.3 },
+              { player_name: 'Claire', niveau: 7.4 },
+              { player_name: 'David', niveau: 4.6 }
+            ]
+          }
+        ],
+        match_results: [
+          { equipe1_id: 1005, equipe2_id: 1006, gagnant_id: 1006 }
+        ]
+      },
+      {
+        id: 104,
+        date_session: '2026-03-22',
+        session_teams: [
+          {
+            id: 1007,
+            numero_equipe: 1,
+            session_players: [
+              { player_name: 'Emma', niveau: 5.2 }
+            ]
+          },
+          {
+            id: 1008,
+            numero_equipe: 2,
+            session_players: [
+              { player_name: 'Farid', niveau: 5.4 }
+            ]
+          }
+        ],
+        match_results: [
+          { equipe1_id: 1007, equipe2_id: 1008, gagnant_id: null },
+          { equipe1_id: 1007, equipe2_id: 1008, gagnant_id: null }
+        ]
+      }
+    ];
+  });
+
+  it('calcule les points avec la formule victoire=3, nul=1, défaite=0', function () {
+    const stats = window.AppSessions.calculerStats();
+    const alice = stats.find(s => s.nom === 'Alice');
+    const bernard = stats.find(s => s.nom === 'Bernard');
+    const emma = stats.find(s => s.nom === 'Emma');
+
+    chai.expect(alice).to.include({ victoires: 1, nuls: 1, defaites: 1, matchs: 3, points: 4 });
+    chai.expect(bernard).to.include({ victoires: 1, nuls: 1, defaites: 1, matchs: 3, points: 4 });
+    chai.expect(emma).to.include({ victoires: 0, nuls: 2, defaites: 0, matchs: 2, points: 2 });
+  });
+
+  it('trie d abord par points puis par départages déterministes', function () {
+    const stats = window.AppSessions.calculerStats();
+    const noms = stats.map(s => s.nom);
+
+    chai.expect(noms.indexOf('Alice')).to.be.below(noms.indexOf('Emma'));
+    chai.expect(noms.indexOf('Claire')).to.be.below(noms.indexOf('Alice'));
+    chai.expect(noms.indexOf('Alice')).to.be.below(noms.indexOf('Bernard'));
+  });
+
+  it('classe 1V 0N 1D devant 0V 2N 0D', function () {
+    const stats = window.AppSessions.calculerStats();
+    const noms = stats.map(s => s.nom);
+
+    chai.expect(noms.indexOf('David')).to.be.below(noms.indexOf('Emma'));
+    chai.expect(noms.indexOf('Farid')).to.be.below(noms.indexOf('David'));
+  });
+
+  it('affiche Pts comme métrique principale et garde le bon colspan', function () {
+    window.AppSessions.afficherStats();
+
+    const container = document.getElementById('statsContainer');
+    const headers = Array.from(container.querySelectorAll('thead th')).map(th => th.textContent.trim());
+    const detailRow = container.querySelector('.history-row td');
+    const rows = container.querySelectorAll('.stats-row');
+
+    chai.expect(headers).to.deep.equal(['Joueur', 'Pts', 'V', 'N', 'D', 'Matchs', '%V']);
+    chai.expect(detailRow.getAttribute('colspan')).to.equal('7');
+    rows.forEach(row => {
+      chai.expect(row.classList.contains('stats-win')).to.equal(false);
+      chai.expect(row.classList.contains('stats-lose')).to.equal(false);
+    });
+  });
+
+  it('exporte un CSV avec la colonne Points dans le même ordre que l UI', async function () {
+    const originalCreateObjectURL = URL.createObjectURL;
+    const originalRevokeObjectURL = URL.revokeObjectURL;
+    const originalAppendChild = document.body.appendChild;
+    const originalRemoveChild = document.body.removeChild;
+
+    let capturedBlob = null;
+    let clicked = false;
+
+    URL.createObjectURL = function (blob) {
+      capturedBlob = blob;
+      return 'blob:test-stats';
+    };
+    URL.revokeObjectURL = function () {};
+    document.body.appendChild = function (node) {
+      if (node && typeof node.click === 'function') {
+        node.click = function () {
+          clicked = true;
+        };
+      }
+      return node;
+    };
+    document.body.removeChild = function (node) {
+      return node;
+    };
+
+    try {
+      window.AppSessions.exporterStats();
+      chai.expect(clicked).to.equal(true);
+      chai.expect(capturedBlob).to.not.equal(null);
+
+      const csv = await capturedBlob.text();
+      const lignes = csv.split('\n');
+
+      chai.expect(lignes[0]).to.equal('\uFEFFJoueur,Points,Victoires,Nuls,Defaites,Matchs,%Victoires,Historique niveau (date:valeur)');
+      chai.expect(lignes[1]).to.match(/^Claire,4,2,1,0,3,67%,/);
+    } finally {
+      URL.createObjectURL = originalCreateObjectURL;
+      URL.revokeObjectURL = originalRevokeObjectURL;
+      document.body.appendChild = originalAppendChild;
+      document.body.removeChild = originalRemoveChild;
+    }
+  });
+});
+
+// ===================================================================
 // TESTS - Formule Elo simplifié (_calculerDeltaMatch)
 // ===================================================================
 describe('AppSessions - _calculerDeltaMatch()', function () {

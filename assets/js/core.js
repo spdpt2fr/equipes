@@ -1,11 +1,12 @@
 // ===================================================================
 // CORE.JS - Configuration et Variables Globales
-// Module central de l'application équipes
+// Module central de l'application equipes
 // ===================================================================
 
 // === CONFIGURATION SUPABASE ===
 const SUPABASE_URL = 'https://vfowenxzpnexcymlruru.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_qiyT6xSxc_ERIIQKQSyw9Q_X3Zdz2Ja';
+
 // === VARIABLES GLOBALES ===
 let supabaseClient;
 let joueurs = [];
@@ -14,15 +15,19 @@ let clubs = [];
 let clubActuel = null;
 let isOnline = false;
 let afficherTotal = true;
-let triJoueurs = 'alpha'; // Par défaut alphabétique
-let triEquipes = 'alpha'; // Tri pour les équipes
+let triJoueurs = 'alpha';
+let triEquipes = 'alpha';
 let searchTerm = '';
 let sessionValidee = null;
 let historiqueSessions = [];
+let currentUser = null;
+let currentRole = 'admin'; // Compatibilite legacy tant que l'auth n'est pas activee
+let levelSecurityEnforced = false;
 
 // === FONCTIONS UTILITAIRES ===
 function updateStatus(message, className) {
     const status = document.getElementById('status');
+    if (!status) return;
     status.textContent = message;
     status.className = 'status ' + className;
 }
@@ -36,11 +41,33 @@ function showToast(message, isError = false) {
     setTimeout(() => toast.classList.add('show'), 100);
     setTimeout(() => {
         toast.classList.remove('show');
-        setTimeout(() => document.body.removeChild(toast), 300);
+        setTimeout(() => {
+            if (toast.parentNode) document.body.removeChild(toast);
+        }, 300);
     }, 3000);
 }
 
-// Échapper les caractères HTML pour éviter les injections XSS
+function isAdmin() {
+    return window.AppCore.currentRole === 'admin';
+}
+
+function canViewNiveaux() {
+    return isAdmin();
+}
+
+function canEditNiveaux() {
+    return isAdmin();
+}
+
+function getClubSlug() {
+    if (!window.AppCore.clubActuel || !window.AppCore.clubActuel.nom) return 'grenoble';
+    return window.AppCore.clubActuel.nom.toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, '_');
+}
+
+// Echapper les caracteres HTML pour eviter les injections XSS
 function escapeHtml(str) {
     if (str == null) return '';
     return String(str)
@@ -52,7 +79,6 @@ function escapeHtml(str) {
 }
 
 // === EXPORT POUR AUTRES MODULES ===
-// Variables globales disponibles via window
 window.AppCore = {
     SUPABASE_URL,
     SUPABASE_ANON_KEY,
@@ -68,7 +94,14 @@ window.AppCore = {
     searchTerm,
     sessionValidee,
     historiqueSessions,
+    currentUser,
+    currentRole,
+    levelSecurityEnforced,
     updateStatus,
     showToast,
+    isAdmin,
+    canViewNiveaux,
+    canEditNiveaux,
+    getClubSlug,
     escapeHtml
 };
