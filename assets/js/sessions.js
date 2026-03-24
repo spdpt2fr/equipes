@@ -1156,10 +1156,11 @@ function calculerStats() {
     return Object.values(stats)
         .map(s => ({
             ...s,
+            points: s.victoires * 3 + s.nuls,
             pct: s.matchs > 0 ? Math.round(s.victoires / s.matchs * 100) : 0,
             historiqueNiveau: s.historiqueNiveau.sort((a, b) => a.date.localeCompare(b.date))
         }))
-        .sort((a, b) => b.pct - a.pct || b.matchs - a.matchs || a.nom.localeCompare(b.nom, 'fr'));
+        .sort((a, b) => b.points - a.points || b.pct - a.pct || b.matchs - a.matchs || a.nom.localeCompare(b.nom, 'fr', { sensitivity: 'base' }));
 }
 
 function afficherStats() {
@@ -1183,6 +1184,8 @@ function afficherStats() {
         return;
     }
 
+    const statsColumnCount = 7;
+
     let html = `
         <div class="card">
             <h2 class="card-title">
@@ -1198,6 +1201,7 @@ function afficherStats() {
                     <thead>
                         <tr>
                             <th>Joueur</th>
+                            <th>Pts</th>
                             <th>V</th><th>N</th><th>D</th>
                             <th>Matchs</th>
                             <th>%V</th>
@@ -1207,7 +1211,7 @@ function afficherStats() {
     `;
 
     stats.forEach((s, idx) => {
-        const rowClass = s.pct > 50 ? 'stats-win' : s.pct < 40 && s.matchs > 0 ? 'stats-lose' : '';
+        const rowClass = '';
         const historiqueHtml = s.historiqueNiveau.map((h, i) => {
             const prev = s.historiqueNiveau[i - 1];
             const diff = prev ? (h.niveau - prev.niveau) : null;
@@ -1219,6 +1223,7 @@ function afficherStats() {
         html += `
                         <tr class="stats-row ${rowClass}" onclick="window._toggleHistorique(${idx})">
                             <td>${window.AppCore.escapeHtml(s.nom)} <span class="history-toggle" id="htoggle-${idx}">▼</span></td>
+                            <td><strong>${s.points}</strong></td>
                             <td class="stats-v">${s.victoires}</td>
                             <td class="stats-n">${s.nuls}</td>
                             <td class="stats-d">${s.defaites}</td>
@@ -1226,7 +1231,7 @@ function afficherStats() {
                             <td><strong>${s.pct}%</strong></td>
                         </tr>
                         <tr id="hrow-${idx}" class="history-row" style="display:none">
-                            <td colspan="6">
+                            <td colspan="${statsColumnCount}">
                                 <div class="niveau-history">
                                     ${historiqueHtml || '<em style="color:#aaa">Aucun snapshot de niveau disponible</em>'}
                                 </div>
@@ -1262,10 +1267,10 @@ function exporterStats() {
     }
 
     const lignes = [
-        'Joueur,Victoires,Nuls,Defaites,Matchs,%Victoires,Historique niveau (date:valeur)',
+        'Joueur,Points,Victoires,Nuls,Defaites,Matchs,%Victoires,Historique niveau (date:valeur)',
         ...stats.map(s => {
             const historique = s.historiqueNiveau.map(h => `${h.date}:${h.niveau}`).join('|');
-            return `${s.nom},${s.victoires},${s.nuls},${s.defaites},${s.matchs},${s.pct}%,"${historique}"`;
+            return `${s.nom},${s.points},${s.victoires},${s.nuls},${s.defaites},${s.matchs},${s.pct}%,"${historique}"`;
         })
     ].join('\n');
 
