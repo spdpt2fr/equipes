@@ -8,6 +8,70 @@ body { font-family: 'Roboto', sans-serif; background-color: #f4f6fa; color: #212
 .container { max-width: 1200px; margin: 0 auto; display: grid; gap: 16px; }
 .card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); transition: box-shadow 0.3s ease; }
 .card:hover { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15); }
+
+/* === HEADER BANNER === */
+.header-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 119, 190, 0.25);
+    background: linear-gradient(
+        105deg,
+        #0077be 0%,
+        #3a96c8 30%,
+        #7baec8 55%,
+        #c5d8e0 75%,
+        #f5f0e8 100%
+    );
+    min-height: 120px;
+    padding: 24px 32px;
+    position: relative;
+}
+
+.header-banner__text {
+    flex: 1;
+    z-index: 1;
+}
+
+.header-banner__title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+    text-shadow: 0 1px 4px rgba(0, 60, 110, 0.3);
+    margin: 0 0 6px;
+}
+
+.header-banner__subtitle {
+    font-size: 14px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.85);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.header-banner__illustration {
+    flex-shrink: 0;
+    width: 200px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    margin: -24px -32px -24px 16px;
+}
+
+.header-banner__img {
+    height: 160px;
+    width: auto;
+    display: block;
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 25%);
+    mask-image: linear-gradient(to right, transparent 0%, black 25%);
+    object-fit: contain;
+    object-position: bottom right;
+}
+
 .card-title { font-size: 20px; font-weight: 500; color: #1976d2; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
 
 /* === STATUS CONNEXION === */
