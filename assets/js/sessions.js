@@ -1252,11 +1252,32 @@ function afficherStats() {
     stats.forEach((s, idx) => {
         const rowClass = '';
         const historiqueHtml = s.historiqueNiveau.map((h, i) => {
-            const prev = s.historiqueNiveau[i - 1];
-            const diff = prev ? (h.niveau - prev.niveau) : null;
+            // niveau avant = snapshot stocké (niveau au moment de la création des équipes)
+            const niveauAvant = h.niveau;
+            // niveau après = snapshot suivant, ou niveau actuel du joueur pour la dernière entrée
+            const nextEntry = s.historiqueNiveau[i + 1];
+            let niveauApres = null;
+            if (nextEntry) {
+                niveauApres = nextEntry.niveau;
+            } else {
+                // Dernière session : chercher le niveau actuel dans AppCore.joueurs
+                const joueurActuel = (window.AppCore.joueurs || []).find(
+                    j => j.nom.toLowerCase() === s.nom.toLowerCase()
+                );
+                if (joueurActuel) niveauApres = joueurActuel.niveau;
+            }
+
+            const diff = niveauApres !== null ? niveauApres - niveauAvant : null;
             const arrow = diff === null ? '' : diff > 0 ? ' ⬆️' : diff < 0 ? ' ⬇️' : ' ↔️';
             const d = new Date(h.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
-            return `<div class="niveau-history-row">${d} → <strong>${h.niveau}</strong>${arrow}</div>`;
+
+            if (niveauApres !== null && niveauApres !== niveauAvant) {
+                return `<div class="niveau-history-row">${d} : <strong>${niveauAvant}</strong> → <strong>${niveauApres}</strong>${arrow}</div>`;
+            } else if (niveauApres !== null) {
+                return `<div class="niveau-history-row">${d} : <strong>${niveauAvant}</strong> (inchangé)</div>`;
+            } else {
+                return `<div class="niveau-history-row">${d} : <strong>${niveauAvant}</strong></div>`;
+            }
         }).join('');
 
         html += `
