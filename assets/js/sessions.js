@@ -1352,6 +1352,96 @@ function exporterStats() {
     window.AppCore.showToast('Statistiques exportées !');
 }
 
+// === EXPORTER TOUT ===
+async function exporterTout() {
+    try {
+        if (!window.AppCore.isOnline || !window.AppCore.clubActuel) {
+            window.AppCore.showToast('Connexion requise pour exporter', true);
+            return;
+        }
+
+        window.AppCore.showToast('Export complet en cours...');
+
+        // 1. Joueurs
+        const joueurs = (window.AppCore.joueurs || []).map(j => ({
+            nom: j.nom,
+            niveau: j.niveau,
+            poste: j.poste,
+            groupe: j.groupe ?? null,
+            actif: j.actif
+        }));
+
+        // 2. Sessions + équipes + matchs (même structure que exporterMatchs)
+        const { data: sessions, error } = await window.AppCore.supabaseClient
+            .from('sessions')
+            .select(`
+                *,
+                session_teams (
+                    *,
+                    session_players (*)
+                ),
+                match_results (*)
+            `)
+            .eq('club_id', window.AppCore.clubActuel.id)
+            .order('date_session', { ascending: true });
+
+        if (error) throw error;
+
+        const sessionsExport = (sessions || []).map(s => ({
+            date_session: s.date_session,
+            nb_equipes: s.nb_equipes,
+            resultats_saisis: s.resultats_saisis,
+            ajustements_appliques: s.ajustements_appliques,
+            teams: (s.session_teams || []).sort((a, b) => a.numero_equipe - b.numero_equipe).map(t => ({
+                numero_equipe: t.numero_equipe,
+                niveau_total: t.niveau_total,
+                players: (t.session_players || []).map(p => ({
+                    player_name: p.player_name,
+                    niveau: p.niveau,
+                    poste: p.poste
+                }))
+            })),
+            results: (s.match_results || []).map(r => {
+                const eq1 = (s.session_teams || []).find(t => t.id === r.equipe1_id);
+                const eq2 = (s.session_teams || []).find(t => t.id === r.equipe2_id);
+                const gagnant = (s.session_teams || []).find(t => t.id === r.gagnant_id);
+                return {
+                    equipe1: eq1 ? eq1.numero_equipe : null,
+                    equipe2: eq2 ? eq2.numero_equipe : null,
+                    gagnant: gagnant ? gagnant.numero_equipe : null
+                };
+            })
+        }));
+
+        // 3. Assemblage
+        const exportData = {
+            version: 1,
+            club: window.AppCore.clubActuel.nom,
+            exported_at: new Date().toISOString(),
+            joueurs,
+            sessions: sessionsExport
+        };
+
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        const club = (window.AppCore.clubActuel.nom || 'club').toLowerCase().replace(/\s+/g, '_');
+        const date = new Date().toISOString().slice(0, 10);
+        a.download = `export_complet_${club}_${date}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        window.AppCore.showToast('Export complet téléchargé');
+    } catch (err) {
+        console.error('Erreur export complet:', err);
+        window.AppCore.showToast('Erreur lors de l\'export complet', true);
+    }
+}
+
 // === EXPORT DES FONCTIONS ===
 window.AppSessions = {
     validerSession,
@@ -1372,5 +1462,6 @@ window.AppSessions = {
     calculerDeltaSession,
     renoterResultats,
     sauvegarderRenotation,
-    _calculerDeltaMatch
+    _calculerDeltaMatch,
+    exporterTout
 };
