@@ -25,6 +25,7 @@ let currentRole = 'admin'; // Compatibilite legacy tant que l'auth n'est pas act
 let levelSecurityEnforced = false;
 let propositionOriginale = null;
 let historiquePropositions = [];
+let methodeConstitution = 'scoreCompetitif'; // 'scoreCompetitif' | 'niveauTotal'
 
 // === FONCTIONS UTILITAIRES ===
 function updateStatus(message, className) {
@@ -101,6 +102,7 @@ window.AppCore = {
     levelSecurityEnforced,
     propositionOriginale,
     historiquePropositions,
+    methodeConstitution,
     updateStatus,
     showToast,
     isAdmin,

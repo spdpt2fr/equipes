@@ -38,6 +38,7 @@
             <button class="tab-btn active" data-tab="gestion">🏒 Gestion</button>
             <button class="tab-btn" data-tab="historique">📅 Historique</button>
             <button class="tab-btn" data-tab="stats">📊 Stats</button>
+            <button class="tab-btn" data-tab="algorithme">ℹ️ Comment ça marche</button>
         </nav>
 
         <div id="section-gestion" class="tab-section active">
@@ -140,6 +141,22 @@
                     <input id="nombreEquipes" type="number" class="input-field" placeholder=" " min="1" required>
                     <label class="input-label">Nombre d'équipes</label>
                 </div>
+                <!-- Sélecteur de méthode — visible admins uniquement (géré par appliquerPermissionsUI) -->
+                <div class="input-group" id="methodeConstitutionGroup"
+                     style="display:flex; align-items:center; gap:16px; grid-column: 1 / -1;">
+                    <span style="font-size:13px; color:#555; white-space:nowrap;">Méthode :</span>
+                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px;">
+                        <input type="radio" name="methodeConstitution" value="scoreCompetitif" checked
+                               onchange="window.AppCore.methodeConstitution = this.value">
+                        Score compétitif
+                        <em style="color:#888; font-size:11px;">(recommandé)</em>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px;">
+                        <input type="radio" name="methodeConstitution" value="niveauTotal"
+                               onchange="window.AppCore.methodeConstitution = this.value">
+                        Niveau total
+                    </label>
+                </div>
                 <button id="creerBtn" class="btn btn-primary">
                     <span class="material-icons">group_add</span>
                     Créer Équipes
@@ -190,6 +207,11 @@
         <!-- Statistiques joueurs -->
         <div id="section-stats" class="tab-section">
             <div id="statsContainer"></div>
+        </div>
+
+        <!-- Section "Comment ça marche" — accessible à tous les utilisateurs -->
+        <div id="section-algorithme" class="tab-section">
+            <div id="algorithmeContainer"></div>
         </div>
 
     </div>

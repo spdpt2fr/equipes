@@ -11,6 +11,89 @@ function _signatureEquipes(equipes) {
         .join('|');
 }
 
+// === SCORE COMPÉTITIF D'UNE ÉQUIPE (partagé) ===
+function scoreEquipe(equipe) {
+    const joueursOrdonnes = [...equipe.joueurs].sort((a, b) => (b.niveau || 0) - (a.niveau || 0));
+    if (joueursOrdonnes.length > 6) {
+        const joueursPrisEnCompte = joueursOrdonnes.slice(0, 6);
+        const joueursIgnores = joueursOrdonnes.slice(6);
+        const meilleur = joueursPrisEnCompte[0] ? joueursPrisEnCompte[0].niveau || 0 : 0;
+        const second   = joueursPrisEnCompte[1] ? joueursPrisEnCompte[1].niveau || 0 : 0;
+        const total    = joueursPrisEnCompte.reduce((acc, j) => acc + (j.niveau || 0), 0);
+        return { score: total * 0.6 + meilleur * 0.25 + second * 0.15, meilleur, second, joueursIgnores };
+    }
+    const meilleur = joueursOrdonnes[0] ? joueursOrdonnes[0].niveau || 0 : 0;
+    const second   = joueursOrdonnes[1] ? joueursOrdonnes[1].niveau || 0 : 0;
+    const total    = equipe.niveauTotal || 0;
+    return { score: total * 0.6 + meilleur * 0.25 + second * 0.15, meilleur, second, joueursIgnores: [] };
+}
+
+// === UTILITAIRES OPTIMISATION ===
+
+// Écart-type des scores compétitifs — mesure le déséquilibre global entre équipes.
+function _ecartTypeScores(equipes) {
+    const scores = equipes.map(e => scoreEquipe(e).score);
+    const moy = scores.reduce((a, b) => a + b, 0) / scores.length;
+    return Math.sqrt(scores.reduce((acc, s) => acc + (s - moy) ** 2, 0) / scores.length);
+}
+
+// Post-greedy : optimisation par recuit simulé (Simulated Annealing).
+function _optimiserEquipes(equipes) {
+    let config = JSON.parse(JSON.stringify(equipes));
+    let ecart  = _ecartTypeScores(config);
+    let T = 1.0;
+
+    for (let iter = 0; iter < 400; iter++) {
+        const nbEq = config.length;
+        const i = Math.floor(Math.random() * nbEq);
+        let j = Math.floor(Math.random() * (nbEq - 1));
+        if (j >= i) j++;
+
+        if (!config[i].joueurs.length || !config[j].joueurs.length) continue;
+
+        const idxA = Math.floor(Math.random() * config[i].joueurs.length);
+        const idxB = Math.floor(Math.random() * config[j].joueurs.length);
+
+        if (config[i].joueurs[idxA].groupe || config[j].joueurs[idxB].groupe) continue;
+
+        const candidat = JSON.parse(JSON.stringify(config));
+        const tmp = candidat[i].joueurs[idxA];
+        candidat[i].joueurs[idxA] = candidat[j].joueurs[idxB];
+        candidat[j].joueurs[idxB] = tmp;
+
+        const origA = window.AppCore.joueurs.find(x => x.id === candidat[i].joueurs[idxA].id);
+        const origB = window.AppCore.joueurs.find(x => x.id === candidat[j].joueurs[idxB].id);
+
+        if (origA && origA.poste === 'indifferent') {
+            const nbAv = candidat[i].joueurs.filter((x, k) => k !== idxA && x.poste === 'avant').length;
+            const nbAr = candidat[i].joueurs.filter((x, k) => k !== idxA && x.poste === 'arriere').length;
+            candidat[i].joueurs[idxA].poste = nbAv <= nbAr ? 'avant' : 'arriere';
+        }
+        if (origB && origB.poste === 'indifferent') {
+            const nbAv = candidat[j].joueurs.filter((x, k) => k !== idxB && x.poste === 'avant').length;
+            const nbAr = candidat[j].joueurs.filter((x, k) => k !== idxB && x.poste === 'arriere').length;
+            candidat[j].joueurs[idxB].poste = nbAv <= nbAr ? 'avant' : 'arriere';
+        }
+
+        [i, j].forEach(idx => {
+            candidat[idx].niveauTotal = candidat[idx].joueurs
+                .reduce((acc, p) => acc + (p.niveau || 0), 0);
+            candidat[idx].meilleurNiveau = candidat[idx].joueurs
+                .reduce((max, p) => Math.max(max, p.niveau || 0), 0);
+        });
+
+        const ecartCandidat = _ecartTypeScores(candidat);
+        const delta = ecartCandidat - ecart;
+
+        if (delta < 0 || Math.random() < Math.exp(-delta / T)) {
+            config = candidat;
+            ecart  = ecartCandidat;
+        }
+        T *= 0.985;
+    }
+    return config;
+}
+
 // === CREATION DES EQUIPES ===
 function creerEquipes() {
     const nbEquipes = parseInt(document.getElementById('nombreEquipes').value, 10);
@@ -56,7 +139,12 @@ function creerEquipes() {
 
     Object.values(groupes).forEach(groupe => {
         groupe.sort((a, b) => (b.niveau || 0) - (a.niveau || 0));
-        window.AppCore.equipes.sort((a, b) => a.niveauTotal - b.niveauTotal);
+        if ((window.AppCore.methodeConstitution || 'scoreCompetitif') === 'scoreCompetitif') {
+            const cache = new Map(window.AppCore.equipes.map(e => [e, scoreEquipe(e).score]));
+            window.AppCore.equipes.sort((a, b) => cache.get(a) - cache.get(b));
+        } else {
+            window.AppCore.equipes.sort((a, b) => a.niveauTotal - b.niveauTotal);
+        }
 
         groupe.forEach(j => {
             let poste = j.poste;
@@ -72,7 +160,12 @@ function creerEquipes() {
 
     sansGroupe.sort((a, b) => (b.niveau || 0) - (a.niveau || 0));
     sansGroupe.forEach(joueur => {
-        window.AppCore.equipes.sort((a, b) => a.niveauTotal - b.niveauTotal);
+        if ((window.AppCore.methodeConstitution || 'scoreCompetitif') === 'scoreCompetitif') {
+            const cache = new Map(window.AppCore.equipes.map(e => [e, scoreEquipe(e).score]));
+            window.AppCore.equipes.sort((a, b) => cache.get(a) - cache.get(b));
+        } else {
+            window.AppCore.equipes.sort((a, b) => a.niveauTotal - b.niveauTotal);
+        }
         let poste = joueur.poste;
         if (poste === 'indifferent') {
             poste = window.AppCore.equipes[0].avant <= window.AppCore.equipes[0].arriere ? 'avant' : 'arriere';
@@ -83,6 +176,11 @@ function creerEquipes() {
         window.AppCore.equipes[0].meilleurNiveau = Math.max(window.AppCore.equipes[0].meilleurNiveau, joueur.niveau || 0);
         window.AppCore.equipes[0][poste]++;
     });
+
+    // Passe d'optimisation SA — uniquement en mode score compétitif
+    if ((window.AppCore.methodeConstitution || 'scoreCompetitif') === 'scoreCompetitif') {
+        window.AppCore.equipes = _optimiserEquipes(window.AppCore.equipes);
+    }
 
     window.AppCore.propositionOriginale = JSON.parse(JSON.stringify(window.AppCore.equipes));
     window.AppCore.historiquePropositions = [_signatureEquipes(window.AppCore.equipes)];
@@ -102,34 +200,6 @@ function afficherEquipes() {
     }
 
     const canViewNiveaux = window.AppCore.canViewNiveaux ? window.AppCore.canViewNiveaux() : true;
-
-    function scoreEquipe(equipe) {
-        const joueursOrdonnes = [...equipe.joueurs].sort((a, b) => (b.niveau || 0) - (a.niveau || 0));
-        if (joueursOrdonnes.length > 6) {
-            const joueursPrisEnCompte = joueursOrdonnes.slice(0, 6);
-            const joueursIgnores = joueursOrdonnes.slice(6);
-            const meilleur = joueursPrisEnCompte[0] ? joueursPrisEnCompte[0].niveau || 0 : 0;
-            const second = joueursPrisEnCompte[1] ? joueursPrisEnCompte[1].niveau || 0 : 0;
-            const total = joueursPrisEnCompte.reduce((acc, j) => acc + (j.niveau || 0), 0);
-            return {
-                score: total * 0.6 + meilleur * 0.25 + second * 0.15,
-                meilleur,
-                second,
-                joueursIgnores
-            };
-        }
-
-        const meilleur = joueursOrdonnes[0] ? joueursOrdonnes[0].niveau || 0 : 0;
-        const second = joueursOrdonnes[1] ? joueursOrdonnes[1].niveau || 0 : 0;
-        const total = equipe.niveauTotal || 0;
-
-        return {
-            score: total * 0.6 + meilleur * 0.25 + second * 0.15,
-            meilleur,
-            second,
-            joueursIgnores: []
-        };
-    }
 
     const scoresObj = window.AppCore.equipes.map(e => scoreEquipe(e));
     const scores = scoresObj.map(e => e.score);
@@ -294,13 +364,10 @@ function autreProposition() {
         return;
     }
 
-    // Calcul des moyennes originales par equipe
-    const moyennesOriginales = window.AppCore.propositionOriginale.map(e => {
-        if (e.joueurs.length === 0) return 0;
-        return e.joueurs.reduce((acc, j) => acc + (j.niveau || 0), 0) / e.joueurs.length;
-    });
+    // Ecart-type de reference pour validation globale
+    const ecartOriginal = _ecartTypeScores(window.AppCore.propositionOriginale);
 
-    for (let tentative = 0; tentative < 10; tentative++) {
+    for (let tentative = 0; tentative < 30; tentative++) {
         const candidat = JSON.parse(JSON.stringify(window.AppCore.propositionOriginale));
 
         // Construire la liste de swaps candidats
@@ -318,22 +385,7 @@ function autreProposition() {
                         // Verifier ecart de niveau <= 1
                         if (Math.abs((a.niveau || 0) - (b.niveau || 0)) > 1) continue;
 
-                        // Simuler le swap et verifier variation de moyenne
-                        const totalI = candidat[i].joueurs.reduce((acc, x) => acc + (x.niveau || 0), 0);
-                        const totalJ = candidat[j].joueurs.reduce((acc, x) => acc + (x.niveau || 0), 0);
-                        const nbI = candidat[i].joueurs.length;
-                        const nbJ = candidat[j].joueurs.length;
-
-                        const newTotalI = totalI - (a.niveau || 0) + (b.niveau || 0);
-                        const newTotalJ = totalJ - (b.niveau || 0) + (a.niveau || 0);
-                        const newMoyI = nbI > 0 ? newTotalI / nbI : 0;
-                        const newMoyJ = nbJ > 0 ? newTotalJ / nbJ : 0;
-
-                        if (Math.abs(newMoyI - moyennesOriginales[i]) > 0.2) continue;
-                        if (Math.abs(newMoyJ - moyennesOriginales[j]) > 0.2) continue;
-
-                        const deltaMoyenne = Math.abs(newMoyI - moyennesOriginales[i]) + Math.abs(newMoyJ - moyennesOriginales[j]);
-                        swaps.push({ i, j, idxA, idxB, deltaMoyenne });
+                        swaps.push({ i, j, idxA, idxB });
                     }
                 }
             }
@@ -398,18 +450,8 @@ function autreProposition() {
             }
         }
 
-        // Validation cumulative : toutes les moyennes doivent rester dans ±0.2
-        let moyennesOk = true;
-        for (let e = 0; e < candidat.length; e++) {
-            const moy = candidat[e].joueurs.length > 0
-                ? candidat[e].joueurs.reduce((acc, j) => acc + (j.niveau || 0), 0) / candidat[e].joueurs.length
-                : 0;
-            if (Math.abs(moy - moyennesOriginales[e]) > 0.2) {
-                moyennesOk = false;
-                break;
-            }
-        }
-        if (!moyennesOk) continue;
+        // Validation globale : le déséquilibre post-swaps ne doit pas dépasser 110% de l'original
+        if (_ecartTypeScores(candidat) > Math.max(ecartOriginal * 1.1, 0.1)) continue;
 
         // Verifier unicite
         const sig = _signatureEquipes(candidat);
@@ -444,7 +486,8 @@ window.AppTeams = {
     creerEquipes,
     afficherEquipes,
     changerEquipe,
-    autreProposition
+    autreProposition,
+    scoreEquipe
 };
 
 window.afficherEquipes = afficherEquipes;
