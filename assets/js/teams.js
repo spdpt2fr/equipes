@@ -1,6 +1,6 @@
 // ===================================================================
 // TEAMS.JS - Gestion des Equipes
-// Module de creation et affichage des equipes
+// Module de creationn et affichage des equipes
 // ===================================================================
 
 // === SIGNATURE UNIQUE D'UNE CONFIGURATION D'EQUIPES ===
