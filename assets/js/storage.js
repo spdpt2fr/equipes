@@ -30,7 +30,7 @@ async function chargerProfilUtilisateur() {
     try {
         if (!window.AppCore.supabaseClient || !window.AppCore.supabaseClient.auth) {
             window.AppCore.currentUser = null;
-            window.AppCore.currentRole = 'admin';
+            // Le rôle est déjà fixé par init() — ne pas écraser
             return { role: window.AppCore.currentRole, user: null };
         }
 
@@ -40,9 +40,8 @@ async function chargerProfilUtilisateur() {
         const user = sessionData && sessionData.session ? sessionData.session.user : null;
         window.AppCore.currentUser = user || null;
 
-        // Compatibilite: sans login, on conserve les droits admin historiques.
+        // Le rôle est déjà fixé par init() (auth flow) — ne pas écraser
         if (!user) {
-            window.AppCore.currentRole = 'admin';
             return { role: window.AppCore.currentRole, user: null };
         }
 
@@ -81,7 +80,7 @@ async function chargerProfilUtilisateur() {
     } catch (error) {
         console.error('Erreur chargement profil utilisateur:', error);
         window.AppCore.currentUser = null;
-        window.AppCore.currentRole = 'admin';
+        // Le rôle est déjà fixé par init() — ne pas écraser
         window.AppCore.levelSecurityEnforced = false;
         return { role: window.AppCore.currentRole, user: null };
     }

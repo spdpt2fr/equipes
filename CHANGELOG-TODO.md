@@ -953,3 +953,142 @@ Ajouter :
 - **Tests** : aucun test unitaire dans ce plan. Envisager d'ajouter ultérieurement : test que `isSelecteur()` retourne `true` avec `?mode=selecteur`, test que `modifierJoueur('actif')` fonctionne en mode sélectionneur, test que `modifierJoueur('niveau')` est bloqué.
 - **`methodeConstitution` default** : actuellement `'niveauTotal'` dans `core.js` (ligne 29). Le forçage en 7.2 écrase cette valeur pour le sélectionneur. Le sélecteur HTML dans `index.html` a `niveauTotal` en selected → comme le sélecteur est masqué, pas d'incohérence visuelle.
 - **Import/Export vs Sync** : la tâche 3.2 masque la carte Import/Export entière. Vérifier si le bouton Sync (synchroniser) est dans cette carte ou ailleurs. S'il est dans la carte, il faut soit le sortir de la carte, soit ne masquer que les boutons individuels. Le plan original mentionne "keep only syncBtn" — à vérifier dans le HTML.
+
+---
+
+## 15. Protection admin par mot de passe + reset email
+
+**Décisions validées** :
+- L'accès admin est protégé par un mot de passe vérifié côté serveur via RPC Supabase (`check_admin_password`)
+- Toutes les opérations sensibles (hash, vérification, reset) sont en `SECURITY DEFINER` — aucun accès direct aux tables `admin_auth`, `password_reset_tokens`, `app_secrets` pour le rôle `anon`
+- La réinitialisation du mot de passe passe par un code 6 chiffres envoyé par email via Resend (appel HTTP depuis `pg_net`)
+- Le mode `?mode=selecteur` court-circuite l'authentification (pas de modale)
+- `localStorage` (`ADMIN_AUTH_KEY`) persiste la session admin entre rechargements
+- La détection URL du mode sélectionneur (actuellement inline dans `core.js`) est déplacée dans `init()` pour centraliser le flow d'authentification
+- Mot de passe initial : `changeme` (à changer impérativement après déploiement)
+
+### Fichiers à modifier
+
+| Fichier | Nature de la modification |
+|---|---|
+| `supabase/step3_admin_password.sql` | **Nouveau fichier** — extensions, tables, RPC, RLS |
+| `index.html` | Modale de login (2 étapes) + bouton logout |
+| `assets/css/components.css` | Styles modale (overlay, box, steps, actions, link, info) |
+| `assets/js/core.js` | Constante `ADMIN_AUTH_KEY`, suppression détection URL inline, default role `'selecteur'`, export |
+| `assets/js/clubs.js` | Fonction `demanderAuthentification()`, refonte auth dans `init()`, export |
+| `assets/js/storage.js` | Guard dans `chargerProfilUtilisateur()` pour ne pas écraser le rôle |
+| `assets/js/ui.js` | Branchement logout, affichage/masquage bouton logout |
+
+### Tâches
+
+**Étape 1 — `supabase/step3_admin_password.sql` (nouveau fichier)**
+
+- [x] **1.1** En-tête : commentaire d'instructions de setup (activer `pgcrypto` et `pg_net` dans le Dashboard Supabase avant exécution, créer un compte Resend, insérer la clé API dans `app_secrets`, changer le mot de passe par défaut)
+- [x] **1.2** `CREATE EXTENSION IF NOT EXISTS pgcrypto;` et `CREATE EXTENSION IF NOT EXISTS pg_net;`
+- [x] **1.3** Table `admin_auth` : `id integer PRIMARY KEY CHECK (id = 1)`, `password_hash text NOT NULL`, `updated_at timestamptz DEFAULT now()`. INSERT initial : `crypt('changeme', gen_salt('bf'))`
+- [x] **1.4** RLS sur `admin_auth` : `ALTER TABLE admin_auth ENABLE ROW LEVEL SECURITY;` — aucune policy pour `anon` (deny all)
+- [x] **1.5** Table `password_reset_tokens` : `id serial PRIMARY KEY`, `code text NOT NULL`, `created_at timestamptz DEFAULT now()`, `expires_at timestamptz DEFAULT (now() + interval '15 minutes')`, `used boolean DEFAULT false`
+- [x] **1.6** RLS sur `password_reset_tokens` : `ENABLE ROW LEVEL SECURITY;` — aucune policy pour `anon`
+- [x] **1.7** Table `app_secrets` : `key text PRIMARY KEY`, `value text NOT NULL`. RLS enabled, aucune policy pour `anon`. L'utilisateur insère manuellement `INSERT INTO app_secrets VALUES ('resend_api_key', 're_...');`
+- [x] **1.8** RPC `check_admin_password(pwd text) RETURNS boolean` : `SECURITY DEFINER`, `SET search_path = public`, compare `crypt(pwd, password_hash) = password_hash` sur la ligne `id = 1` de `admin_auth`. `GRANT EXECUTE ON FUNCTION check_admin_password TO anon;`
+- [x] **1.9** RPC `request_password_reset() RETURNS text` : `SECURITY DEFINER`, génère un code 6 chiffres (`lpad(floor(random() * 1000000)::text, 6, '0')`), rate-limit (pas de token non-utilisé créé dans les 60 dernières secondes → sinon raise exception), insère dans `password_reset_tokens`, lit `resend_api_key` depuis `app_secrets`, appelle `net.http_post('https://api.resend.com/emails', ...)` avec JSON body (`to: bernardi_l@outlook.fr`, `from: onboarding@resend.dev`, `subject: Code de réinitialisation`), retourne `'ok'`. `GRANT EXECUTE TO anon;`
+- [x] **1.10** RPC `reset_admin_password(code text, new_pwd text) RETURNS boolean` : `SECURITY DEFINER`, valide le code (exists, `used = false`, `expires_at > now()`), vérifie `length(new_pwd) >= 6` (sinon raise exception), met à jour `admin_auth.password_hash = crypt(new_pwd, gen_salt('bf'))`, marque le code `used = true`, retourne `true`. `GRANT EXECUTE TO anon;`
+
+**Étape 2 — `index.html` (modale login + bouton logout)**
+
+- [x] **2.1** Avant `</body>` (et avant les `<script>` tags) : ajouter le HTML de la modale `#loginModal`
+  - `<div id="loginModal" class="modal-overlay" style="display:none">`
+  - Contient `<div class="modal-box">`
+  - **loginStep** (`<div id="loginStep" class="modal-step">`) : `<h2>Accès Administration</h2>`, input password `#loginPassword`, bouton submit `#loginSubmitBtn` (classe `btn btn-primary`), bouton annuler `#loginCancelBtn` (classe `btn btn-secondary`, texte "Continuer en sélectionneur"), lien "Mot de passe oublié ?" `#forgotPasswordLink` (classe `modal-link`)
+  - **resetStep** (`<div id="resetStep" class="modal-step" style="display:none">`) : `<p class="modal-info">Un code a été envoyé par email</p>`, input text `#resetCode` (placeholder "Code à 6 chiffres"), input password `#resetNewPassword` (placeholder "Nouveau mot de passe"), input password `#resetConfirmPassword` (placeholder "Confirmer mot de passe"), bouton submit `#resetSubmitBtn` (classe `btn btn-primary`), bouton retour `#resetBackBtn` (classe `btn btn-secondary`)
+- [x] **2.2** Dans `.club-selector`, après `#clubInfo` : ajouter `<button id="logoutBtn" class="btn btn-danger-outline" style="display:none" title="Déconnexion"><span class="material-icons">logout</span></button>`
+
+**Étape 3 — `assets/css/components.css` (styles modale)**
+
+- [x] **3.1** Ajouter le bloc `/* === MODALE LOGIN === */` en fin de fichier :
+  - `.modal-overlay` : `position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center;`
+  - `.modal-box` : `background: white; border-radius: 12px; padding: 32px; max-width: 400px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.2);`
+  - `.modal-box h2` : `margin: 0 0 20px; font-size: 20px; text-align: center;`
+  - `.modal-step .input-group` : `margin-bottom: 16px;`
+  - `.modal-step .input-group input` : `width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;`
+  - `.modal-actions` : `display: flex; gap: 12px; margin-top: 20px;`
+  - `.modal-actions .btn` : `flex: 1;`
+  - `.modal-link` : `display: block; text-align: center; margin-top: 16px; color: #1976d2; font-size: 13px; cursor: pointer; text-decoration: underline;`
+  - `.modal-info` : `background: #e3f2fd; color: #1565c0; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 16px;`
+
+**Étape 4 — `assets/js/core.js` (constante + suppression inline URL + default role)**
+
+- [x] **4.1** Ajouter `const ADMIN_AUTH_KEY = 'hockeySub_adminAuth';` après le bloc de constantes Supabase (après `SUPABASE_ANON_KEY`), avant les variables globales
+- [x] **4.2** Changer `let currentRole = 'admin';` → `let currentRole = 'selecteur';` — le rôle admin sera attribué dynamiquement par le flow auth dans `init()`
+- [x] **4.3** Supprimer les lignes de détection URL inline :
+  ```js
+  // Lecture du mode URL (vue sélectionneur)
+  const _urlMode = new URLSearchParams(window.location.search).get('mode');
+  if (_urlMode === 'selecteur') currentRole = 'selecteur';
+  ```
+  Cette logique est déplacée dans `init()` (tâche 5.2)
+- [x] **4.4** Ajouter `ADMIN_AUTH_KEY` dans l'export `window.AppCore = { … }`
+
+**Étape 5 — `assets/js/clubs.js` (authentification + refonte init)**
+
+- [x] **5.1** Ajouter `async function demanderAuthentification()` avant `init()` :
+  - Retourne une `Promise` qui se résout quand l'utilisateur s'est authentifié ou a annulé
+  - Affiche `#loginModal` (`style.display = 'flex'`)
+  - **loginSubmitBtn click** : lit `#loginPassword.value`, appelle `window.AppCore.supabaseClient.rpc('check_admin_password', { pwd })`, si `true` → `currentRole = 'admin'`, `localStorage.setItem(ADMIN_AUTH_KEY, 'ok')`, masquer modale, resolve ; si `false` → toast erreur, vider le champ password
+  - **loginCancelBtn click** : masquer modale, `currentRole = 'selecteur'`, resolve
+  - **forgotPasswordLink click** : appelle `supabaseClient.rpc('request_password_reset')`, si OK → masquer `#loginStep`, afficher `#resetStep` ; si erreur → toast erreur (rate limit ou autre)
+  - **resetSubmitBtn click** : valide que `#resetCode` non vide, `#resetNewPassword.value === #resetConfirmPassword.value`, `length >= 6`, appelle `supabaseClient.rpc('reset_admin_password', { code, new_pwd })`, si `true` → toast succès, auto-login (appel `check_admin_password` avec `new_pwd`), `currentRole = 'admin'`, `localStorage.setItem(ADMIN_AUTH_KEY, 'ok')`, masquer modale, resolve ; si `false` → toast erreur
+  - **resetBackBtn click** : masquer `#resetStep`, afficher `#loginStep`
+  - **Enter key** : sur `#loginPassword` → trigger loginSubmitBtn click ; sur `#resetConfirmPassword` → trigger resetSubmitBtn click
+  - **Disable pendant RPC** : désactiver `loginSubmitBtn` / `resetSubmitBtn` pendant l'appel, réactiver après
+
+- [x] **5.2** Modifier `init()` : insérer le flow d'authentification entre `supabaseClient = createClient(...)` et `chargerProfilUtilisateur()` :
+  1. `const urlMode = new URLSearchParams(window.location.search).get('mode');`
+  2. Si `urlMode === 'selecteur'` → `window.AppCore.currentRole = 'selecteur'` (skip auth)
+  3. Sinon si `localStorage.getItem(window.AppCore.ADMIN_AUTH_KEY) === 'ok'` → `window.AppCore.currentRole = 'admin'`
+  4. Sinon → `await demanderAuthentification()`
+  5. Continuer avec `chargerProfilUtilisateur()` et le reste d'`init()` existant
+
+- [x] **5.3** Ajouter `demanderAuthentification` dans l'export `window.AppClubs = { … }`
+
+**Étape 6 — `assets/js/storage.js` (préservation du rôle)**
+
+- [x] **6.1** Dans `chargerProfilUtilisateur()`, modifier le fallback "no auth user" :
+  - Ligne actuelle (dans le bloc `if (!user)`) : `window.AppCore.currentRole = 'admin';`
+  - Remplacer par : `if (!window.AppCore.isSelecteur()) window.AppCore.currentRole = window.AppCore.currentRole;`
+  - Ou plus simplement : ne pas toucher au rôle si déjà défini par le flow auth — supprimer la ligne `window.AppCore.currentRole = 'admin';` dans le bloc `if (!user)` et la remplacer par un commentaire expliquant que le rôle est déjà fixé par init()
+  - Le bloc `if (!user)` doit se contenter de `return { role: window.AppCore.currentRole, user: null };`
+
+**Étape 7 — `assets/js/ui.js` (logout + affichage bouton)**
+
+- [x] **7.1** Dans `attachEventListeners()` : brancher `#logoutBtn`
+  ```js
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+      logoutBtn.addEventListener('click', () => {
+          localStorage.removeItem(window.AppCore.ADMIN_AUTH_KEY);
+          location.reload();
+      });
+  }
+  ```
+
+- [x] **7.2** Dans `appliquerPermissionsUI()` : afficher/masquer `#logoutBtn` selon le rôle
+  ```js
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) logoutBtn.style.display = window.AppCore.isAdmin() ? '' : 'none';
+  ```
+
+### Points d'attention
+
+- **Fallback offline** : si `supabaseClient` n'est pas disponible ou si le RPC `check_admin_password` échoue (réseau), accepter `localStorage` tel quel. Dans `demanderAuthentification()`, wraper l'appel RPC dans un try/catch : en cas d'erreur réseau, si `localStorage.getItem(ADMIN_AUTH_KEY) === 'ok'` → accorder admin avec toast "Mode hors ligne, authentification locale". Sinon → forcer sélectionneur.
+- **Enter key** : brancher `keydown` avec `event.key === 'Enter'` sur `#loginPassword`, `#resetCode`, `#resetNewPassword`, `#resetConfirmPassword` pour éviter de forcer l'utilisateur à cliquer.
+- **Overlay bloquant** : la modale `z-index: 9999` avec `inset: 0` bloque toute interaction avec le reste de la page. Vérifier qu'aucun élément n'a un z-index supérieur.
+- **Vidage des champs** : après un échec de login, vider `#loginPassword.value`. Après un échec de reset, ne PAS vider le code (l'utilisateur peut avoir une typo).
+- **Double-clic** : désactiver les boutons submit pendant les appels RPC (`btn.disabled = true`), réactiver en `finally`. Empêche les appels multiples.
+- **Adresse expéditeur Resend** : `onboarding@resend.dev` fonctionne uniquement en mode sandbox Resend (100 emails/jour, uniquement vers l'email du compte). Pour la production, l'utilisateur devra vérifier un domaine et mettre à jour l'adresse `from` dans la RPC.
+- **Rate limit** : la RPC `request_password_reset` vérifie qu'aucun token n'a été créé dans les 60 dernières secondes. Si rate-limité, le toast doit afficher un message clair ("Veuillez patienter 60 secondes").
+- **Mot de passe initial** : `changeme` est volontairement faible. Le commentaire en tête du SQL et un toast au premier login doivent rappeler de le changer. Optionnel : détecter `check_admin_password('changeme')` dans `init` et afficher un avertissement.
+- **Ordre de chargement** : `core.js` déclare `currentRole = 'selecteur'` par défaut. `clubs.js > init()` détermine le rôle réel. Entre le chargement de `core.js` et l'appel `init()`, tous les modules voient `currentRole = 'selecteur'`. Ce comportement est correct car aucun module ne lit `currentRole` avant `init()`.
+- **Compatibilité §14** : la §14 déplaçait la détection URL dans `core.js` top-level. La §15 la redéplace dans `init()`. Le code inline de la §14 (lignes 27-28 de `core.js`) doit être supprimé (tâche 4.3). Vérifier qu'il n'y a pas de double détection.
+- **`chargerProfilUtilisateur` ne doit plus écraser le rôle** : la tâche 6.1 est critique. Si le fallback `currentRole = 'admin'` subsiste dans le bloc `if (!user)` de `storage.js`, il annulera le rôle `'selecteur'` fixé par la modale (Cancel) ou par l'URL `?mode=selecteur`. Bien supprimer cette ligne.
+- **Pas de test unitaire** dans ce plan : les RPC sont testables uniquement côté Supabase (pas de mock JS). Envisager des tests manuels documentés : login OK, login KO, cancel → sélectionneur, reset flow complet, rate limit, offline fallback.

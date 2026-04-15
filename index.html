@@ -55,6 +55,9 @@
             <div class="club-info" id="clubInfo">
                 Chargement...
             </div>
+            <button id="logoutBtn" class="btn btn-sm btn-danger-outline" style="display:none;" title="Déconnexion admin">
+                <span class="material-icons" style="font-size:18px;">logout</span>
+            </button>
         </div>
 
         <!-- Saisie des joueurs -->
@@ -221,6 +224,48 @@
             <div id="algorithmeContainer"></div>
         </div>
 
+    </div>
+
+    <!-- Modal de connexion admin -->
+    <div id="loginModal" class="modal-overlay" style="display:none;">
+        <div class="modal-box">
+            <div id="loginStep" class="modal-step">
+                <h2>🔒 Accès Administrateur</h2>
+                <div class="modal-field">
+                    <input id="loginPassword" type="password" class="input-field" placeholder="Mot de passe">
+                </div>
+                <div class="modal-actions">
+                    <button id="loginSubmitBtn" class="btn btn-primary">
+                        <span class="material-icons">login</span> Connexion
+                    </button>
+                    <button id="loginCancelBtn" class="btn btn-warning">
+                        <span class="material-icons">visibility</span> Mode Sélectionneur
+                    </button>
+                </div>
+                <a href="#" id="forgotPasswordLink" class="modal-link">Mot de passe oublié ?</a>
+            </div>
+            <div id="resetStep" class="modal-step" style="display:none;">
+                <h2>🔑 Réinitialisation</h2>
+                <p id="resetMessage" class="modal-info">Un code va être envoyé à votre email.</p>
+                <div class="modal-field">
+                    <input id="resetCode" type="text" class="input-field" placeholder="Code à 6 chiffres" maxlength="6">
+                </div>
+                <div class="modal-field">
+                    <input id="resetNewPwd" type="password" class="input-field" placeholder="Nouveau mot de passe (min. 6 car.)">
+                </div>
+                <div class="modal-field">
+                    <input id="resetConfirmPwd" type="password" class="input-field" placeholder="Confirmer le mot de passe">
+                </div>
+                <div class="modal-actions">
+                    <button id="resetSubmitBtn" class="btn btn-primary">
+                        <span class="material-icons">check</span> Réinitialiser
+                    </button>
+                    <button id="resetBackBtn" class="btn btn-warning">
+                        <span class="material-icons">arrow_back</span> Retour
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Scripts JavaScript modulaires -->

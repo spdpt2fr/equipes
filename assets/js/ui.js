@@ -116,6 +116,10 @@ function appliquerPermissionsUI() {
     // Vue sélectionneur : masquer carte import/export
     const importExportCard = document.getElementById('importExportCard');
     if (importExportCard) importExportCard.style.display = window.AppCore.isAdmin() ? '' : 'none';
+
+    // Bouton logout : visible admin uniquement
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) logoutBtn.style.display = window.AppCore.isAdmin() ? '' : 'none';
 }
 
 // === NAVIGATION PAR ONGLETS ===
@@ -480,6 +484,15 @@ function attachEventListeners() {
     }
 
     appliquerPermissionsUI();
+
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+            localStorage.removeItem(window.AppCore.ADMIN_AUTH_KEY);
+            location.reload();
+        });
+    }
+
     console.log('Tous les event listeners attaches avec succes');
 }
 

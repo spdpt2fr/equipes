@@ -6,6 +6,7 @@
 // === CONFIGURATION SUPABASE ===
 const SUPABASE_URL = 'https://vfowenxzpnexcymlruru.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_qiyT6xSxc_ERIIQKQSyw9Q_X3Zdz2Ja';
+const ADMIN_AUTH_KEY = 'hockeySub_adminAuth';
 
 // === VARIABLES GLOBALES ===
 let supabaseClient;
@@ -21,11 +22,7 @@ let searchTerm = '';
 let sessionValidee = null;
 let historiqueSessions = [];
 let currentUser = null;
-let currentRole = 'admin'; // Compatibilite legacy tant que l'auth n'est pas activee
-
-// Lecture du mode URL (vue sélectionneur)
-const _urlMode = new URLSearchParams(window.location.search).get('mode');
-if (_urlMode === 'selecteur') currentRole = 'selecteur';
+let currentRole = 'selecteur'; // Le role admin sera attribue par le flow auth dans init()
 
 let levelSecurityEnforced = false;
 let propositionOriginale = null;
@@ -94,6 +91,7 @@ function escapeHtml(str) {
 window.AppCore = {
     SUPABASE_URL,
     SUPABASE_ANON_KEY,
+    ADMIN_AUTH_KEY,
     supabaseClient,
     joueurs,
     equipes,
