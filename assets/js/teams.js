@@ -260,7 +260,7 @@ function afficherEquipes() {
 
         if (canViewNiveaux && window.AppCore.afficherTotal) {
             html += `<div class="team-total">
-                Niveau total : ${e.niveauTotal} (moy. ${e.joueurs.length > 0 ? (e.niveauTotal / e.joueurs.length).toFixed(1) : '0'})
+                Niveau total : ${(+e.niveauTotal).toFixed(1)} (moy. ${e.joueurs.length > 0 ? (e.niveauTotal / e.joueurs.length).toFixed(1) : '0'})
                 &nbsp;|&nbsp; Score compétitif : ${scoresObj[idx].score.toFixed(2)}
                 <br><span style="font-size:12px; color:#666;">
                 (Top6×0.6 : ${(e.joueurs.length > 6
