@@ -259,18 +259,20 @@ function afficherEquipes() {
         html += '</ul>';
 
         if (canViewNiveaux && window.AppCore.afficherTotal) {
-            html += `<div class="team-total">Score competitif : ${scoresObj[idx].score.toFixed(2)}<br>
-                <span style="font-size:12px;">
-                (Somme x 0.6 : ${(e.joueurs.length > 6
+            html += `<div class="team-total">
+                Niveau total : ${e.niveauTotal} (moy. ${e.joueurs.length > 0 ? (e.niveauTotal / e.joueurs.length).toFixed(1) : '0'})
+                &nbsp;|&nbsp; Score compétitif : ${scoresObj[idx].score.toFixed(2)}
+                <br><span style="font-size:12px; color:#666;">
+                (Top6×0.6 : ${(e.joueurs.length > 6
                     ? [...e.joueurs].sort((a, b) => (b.niveau || 0) - (a.niveau || 0)).slice(0, 6).reduce((acc, j) => acc + (j.niveau || 0), 0)
                     : e.niveauTotal
-                ).toFixed(2)}
-                , meilleur x 0.25 : ${(scoresObj[idx].meilleur * 0.25).toFixed(2)}
-                , 2e meilleur x 0.15 : ${(scoresObj[idx].second * 0.15).toFixed(2)})
+                ).toFixed(1)}
+                , 1er×0.25 : ${(scoresObj[idx].meilleur * 0.25).toFixed(2)}
+                , 2e×0.15 : ${(scoresObj[idx].second * 0.15).toFixed(2)})
                 </span>`;
 
             if (scoresObj[idx].joueursIgnores.length > 0) {
-                html += `<br><span style="color:#d32f2f; font-size:12px;">(Joueur(s) non pris en compte : ${scoresObj[idx].joueursIgnores.map(j => window.AppCore.escapeHtml(j.nom)).join(', ')})</span>`;
+                html += `<br><span style="color:#d32f2f; font-size:12px;">(Joueur(s) hors top 6 : ${scoresObj[idx].joueursIgnores.map(j => window.AppCore.escapeHtml(j.nom)).join(', ')})</span>`;
             }
             html += `</div>`;
         }
