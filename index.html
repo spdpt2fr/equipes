@@ -168,39 +168,43 @@
                     Import / Export et Actions
                 </h2>
                 <div class="actions-grid">
+                    <!-- Joueurs (vert) -->
                     <div class="file-input-wrapper">
                         <input accept=".txt,.csv" id="fichierJoueurs" type="file" style="display: none;">
                         <button type="button" class="btn btn-secondary" onclick="document.getElementById('fichierJoueurs').click();">
-                            <span class="material-icons">upload_file</span>
-                            Importer fichier
+                            <span class="material-icons">upload</span>
+                            Importer Joueurs
                         </button>
                     </div>
                     <button id="exportBtn" class="btn btn-secondary">
                         <span class="material-icons">download</span>
                         Exporter Joueurs
                     </button>
-                    <button id="exportMatchsBtn" class="btn btn-secondary">
-                        <span class="material-icons">emoji_events</span>
-                        Exporter Matchs
-                    </button>
+                    <!-- Matchs (violet) -->
                     <div class="file-input-wrapper">
                         <input accept=".json" id="fichierMatchs" type="file" style="display: none;">
-                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('fichierMatchs').click();">
+                        <button type="button" class="btn btn-purple" onclick="document.getElementById('fichierMatchs').click();">
                             <span class="material-icons">upload</span>
                             Importer Matchs
                         </button>
                     </div>
-                    <button id="exportToutBtn" class="btn btn-primary" onclick="window.AppSessions.exporterTout()">
-                        <span class="material-icons">archive</span>
-                        Exporter tout
+                    <button id="exportMatchsBtn" class="btn btn-purple">
+                        <span class="material-icons">download</span>
+                        Exporter Matchs
                     </button>
+                    <!-- Tout (bleu) -->
                     <div class="file-input-wrapper">
                         <input accept=".json" id="fichierTout" type="file" style="display: none;">
                         <button type="button" class="btn btn-primary" onclick="document.getElementById('fichierTout').click();">
-                            <span class="material-icons">unarchive</span>
+                            <span class="material-icons">upload</span>
                             Importer tout
                         </button>
                     </div>
+                    <button id="exportToutBtn" class="btn btn-primary" onclick="window.AppSessions.exporterTout()">
+                        <span class="material-icons">download</span>
+                        Exporter tout
+                    </button>
+                    <!-- Actions -->
                     <button id="syncBtn" class="btn btn-warning">
                         <span class="material-icons">sync</span>
                         Synchroniser
