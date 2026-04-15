@@ -129,3 +129,6 @@
 .tri-btn.active { background: #1976d2; color: white; }
 .tri-btn.active:hover { background: #1565c0; }
 @media (max-width: 480px) { .tri-btn { padding: 6px 8px; font-size: 12px; } }
+
+/* === ACTIONS EQUIPES === */
+.equipes-actions { display: flex; justify-content: center; gap: 12px; margin-top: 20px; flex-wrap: wrap; }

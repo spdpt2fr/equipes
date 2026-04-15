@@ -5,6 +5,61 @@ Suite de la session du 05/03/2026. Fonctionnalités planifiées et validées, pa
 
 ---
 
+## [TODO] Header Banner Illustration — 2026-03-25
+
+### Décisions validées
+- Remplacer le `<div class="card">` du titre par un `<header class="header-banner">` sémantique.
+- Fond en dégradé bleu→crème (`linear-gradient 105deg`) intégrant une illustration aquarelle PNG à fond transparent.
+- L'illustration est masquée en fondu via `mask-image` (côté gauche) pour une transition naturelle avec le dégradé.
+- En mobile ≤ 768 px : colonne, illustration masquée (`display: none`), dégradé simplifié.
+- Image **non commitable** : placée manuellement par l'utilisateur.
+
+### Fichiers à modifier
+
+| Fichier | Nature de la modification |
+|---|---|
+| `index.html` | Remplacer le bloc `<div class="card"><h1>…</h1></div>` par `<header class="header-banner">…</header>` |
+| `assets/css/main.css` | Ajouter le bloc `/* === HEADER BANNER === */` après la règle `.card:hover` |
+| `assets/css/responsive.css` | Ajouter les overrides mobiles dans la `@media (max-width: 768px)` existante |
+
+### Tâches
+
+- [x] **index.html** — Remplacer le `<div class="card">` entourant le `<h1>` (lignes ~20-25) par :
+  ```html
+  <header class="header-banner">
+      <div class="header-banner__text">
+          <h1 class="header-banner__title">Gestionnaire d'Équipes</h1>
+          <p class="header-banner__subtitle">Hockey Subaquatique · Grenoble &amp; Jeeves</p>
+      </div>
+      <div class="header-banner__illustration" aria-hidden="true">
+          <img src="assets/images/diver-hockey.png"
+               alt=""
+               class="header-banner__img">
+      </div>
+  </header>
+  ```
+
+- [x] **assets/css/main.css** — Ajouter après `.card:hover { … }` le bloc complet `.header-banner` avec ses 6 règles BEM :
+  `.header-banner`, `.header-banner__text`, `.header-banner__title`, `.header-banner__subtitle`,
+  `.header-banner__illustration`, `.header-banner__img`
+  (dégradé `105deg`, `min-height: 120px`, `mask-image` + préfixe `-webkit-mask-image`)
+
+- [x] **assets/css/responsive.css** — Dans la `@media (max-width: 768px)` existante, ajouter le bloc `/* === HEADER BANNER MOBILE === */` :
+  `flex-direction: column`, `display: none` sur l'illustration, `font-size` réduit pour titre et sous-titre
+
+- [ ] **[MANUEL]** Créer le dossier `assets/images/` et y placer l'illustration `diver-hockey.png`
+  (PNG à fond transparent, hauteur recommandée ≥ 160 px, orientation portrait ou format libre)
+
+### Points d'attention
+
+- **Fond transparent obligatoire** : sans transparence, le `mask-image` sera sans effet et le dégradé du bandeau sera occulté.
+- **Fallback sans image** : si `diver-hockey.png` est absent, le bandeau reste cohérent (le côté droit affiche simplement la teinte crème du dégradé). Aucun `onerror` JS nécessaire.
+- **Compatibilité Safari/iOS** : le préfixe `-webkit-mask-image` doit être écrit **avant** `mask-image` dans le CSS.
+- **`<header>` sémantique** : vérifier qu'aucun style global `header { … }` existant dans `main.css` ou `components.css` n'entre en conflit avec `.header-banner`.
+- **Namespace** : aucune modification JS, aucun export `window.App*` requis pour cette feature.
+
+---
+
 ## 1. Navigation par onglets (mobile-first)
 
 **Fichiers** : `index.html`, `assets/css/main.css`, `assets/js/ui.js`
@@ -248,6 +303,66 @@ Ajouter :
 - **Valeurs Elo de référence** pour validation manuelle :
   - Équipes égales : `expected = 0.5`  victoire `+0.15`, défaite `0.15`, nul `0`
   - Opp. +2 niveaux (`myAvg=5, oppAvg=7`) : `expected  0.24`  victoire `+0.23`, défaite `0.07`
+
+---
+
+## 9. Préparation du commit ranking Stats 3/1/0
+
+**Décisions validées** :
+- Périmètre limité à la feature ranking Stats avec barème 3/1/0
+- Aucun changement de code métier dans cette étape, uniquement l'isolement du diff à committer
+- Inclure `assets/js/sessions.js` et `tests/tests.js` seulement si ce sont les seuls fichiers réellement nécessaires
+
+---
+
+## 10. Maquette visuelle SVG isolée
+
+**Décisions validées** :
+- Produire une maquette en SVG autonome uniquement pour validation visuelle
+- Représenter les zones clés : header, tabs, contexte club, formulaire, liste joueurs, stats
+- Ne modifier aucun fichier applicatif existant ni aucun code métier
+- Placer la maquette hors du flux applicatif réel dans un emplacement dédié
+
+**Fichiers à modifier** :
+- Nouveau fichier SVG isolé à créer dans un dossier de mockup dédié
+
+**Tâches** :
+- [ ] Créer un unique fichier SVG autonome présentant le nouveau look and feel global
+- [ ] Structurer la maquette en sections distinctes pour les 6 zones produit attendues
+- [ ] Prévoir un nommage et un emplacement explicites de type mockup/validation pour éviter toute confusion avec l'application réelle
+- [ ] Limiter la maquette à un usage de revue visuelle, sans branchement HTML, CSS ou JS dans l'application
+
+**Points d'attention** :
+- Aucun import de la maquette dans [index.html](index.html)
+- Aucun ajout dans [assets/js/core.js](assets/js/core.js), [assets/js/ui.js](assets/js/ui.js) ou les feuilles CSS existantes
+- Le livrable doit rester facilement supprimable après validation d'UI
+
+### Fichiers à modifier
+- `CHANGELOG-TODO.md`
+
+### Tâches
+
+- [ ] **`assets/js/sessions.js`**  isoler le périmètre ranking
+  - Vérifier que le diff retenu couvre uniquement calcul des points, tri, affichage Stats et export CSV Stats liés au ranking 3/1/0
+
+- [ ] **`tests/tests.js`**  inclure uniquement les tests liés au ranking
+  - Garder ce fichier hors du commit si aucun test ranking n'est requis
+
+- [ ] **Staging Git**  exclure les changements non liés
+  - Sortir du staging tout fichier hors périmètre
+  - Utiliser un staging fin si un même fichier mélange ranking et changements non liés
+
+- [ ] **Validation finale du diff stage**
+  - Contrôler que le diff indexé ne contient que la feature ranking Stats 3/1/0 avant création du commit
+
+- [ ] **Commit**  préparer le message
+  - `feat: rank player stats with 3-1-0 scoring`
+
+### Points d'attention
+
+- Ne pas embarquer des ajustements adjacents sur l'historique, l'UI générale ou d'autres formules de score
+- Si `assets/js/sessions.js` contient des changements mixtes, découper précisément le hunk au staging au lieu d'élargir le commit
+- Vérifier la cohérence entre code indexé et tests indexés avant le commit
   - Opp. 2 niveaux (`myAvg=7, oppAvg=5`) : `expected  0.76`  victoire `+0.07`, défaite `0.23`
 - **Pas de modification CSS** requise pour cette feature
 - **Pas de modification Supabase**  logique purement JS côté client
@@ -370,3 +485,202 @@ Ajouter :
 - **Départages** : documenter dans le code l'ordre exact retenu pour éviter les régressions silencieuses au prochain ajustement du ranking
 - **Colspan** : la ligne d'historique détaillée dans `afficherStats()` doit suivre automatiquement le nombre réel de colonnes après ajout/remplacement de `Pts`
 - **CSS optionnel** : si aucun problème de lisibilité n'apparaît, ne pas ouvrir un chantier visuel inutile dans `assets/css/components.css`
+
+---
+
+## 11. "Autre proposition" — alternatives d'équipes équilibrées
+
+**Décisions validées** :
+- Après génération des équipes, un bouton "Autre proposition" permet de générer une configuration alternative
+- L'alternative est obtenue par swaps de joueurs de niveaux proches (|delta| ≤ 1) entre équipes
+- Chaque alternative repart de la proposition initiale (pas de dérive en cascade)
+- La variation de moyenne par équipe ne doit pas excéder ±0.2 vs la configuration originale
+- Unicité garantie via signature (max 10 tentatives, puis toast informatif)
+- Un déplacement manuel via `changerEquipe()` invalide le mécanisme de proposition
+
+### Fichiers à modifier
+
+| Fichier | Nature de la modification |
+|---|---|
+| `assets/js/core.js` | 2 nouvelles variables globales + export `window.AppCore` |
+| `assets/js/teams.js` | Nouvelle fonction `autreProposition()`, modifications de `creerEquipes()`, `afficherEquipes()`, `changerEquipe()` + export |
+| `assets/css/components.css` | Flex layout pour le conteneur des boutons d'action équipes |
+
+### Tâches
+
+- [x] **`assets/js/core.js`**  déclarer 2 nouvelles variables globales
+  - `let propositionOriginale = null;` (array|null) — copie profonde des équipes issues de `creerEquipes()`
+  - `let historiquePropositions = [];` (array) — liste des signatures de configurations déjà proposées
+  - Placer après les variables globales existantes (`historiqueSessions`, `currentUser`, etc.)
+
+- [x] **`assets/js/core.js`**  ajouter les 2 variables dans l'export `window.AppCore = { … }`
+  - Ajouter `propositionOriginale` et `historiquePropositions` dans l'objet exporté
+
+- [x] **`assets/js/teams.js`**  nouvelle fonction utilitaire `_signatureEquipes(equipes)`
+  - Fonction privée (non exportée), préfixée `_`
+  - Pour chaque équipe : trier les IDs joueurs, concaténer en string
+  - Trier les strings d'équipes entre elles pour rendre la signature indépendante de l'ordre des équipes
+  - Retourner la concaténation finale (ex: `"1,3,5|2,4,6"`)
+  - Déclarer avec `function` pour bénéficier du hoisting
+
+- [x] **`assets/js/teams.js`**  modifier `creerEquipes()` : sauvegarder la proposition originale
+  - Après le `forEach(sansGroupe)` et avant `afficherEquipes()` :
+    - `window.AppCore.propositionOriginale = JSON.parse(JSON.stringify(window.AppCore.equipes));`
+    - `window.AppCore.historiquePropositions = [_signatureEquipes(window.AppCore.equipes)];`
+
+- [x] **`assets/js/teams.js`**  nouvelle fonction `autreProposition()`
+  - **Garde** : si `!window.AppCore.propositionOriginale` ou `propositionOriginale.length < 2` → toast "Aucune alternative disponible", return
+  - **Boucle max 10 tentatives** pour trouver une configuration unique :
+    1. Deep-copy `propositionOriginale` dans une variable locale `candidat`
+    2. Construire la liste de swaps candidats :
+       - Pour chaque paire d'équipes (i, j) avec i < j
+       - Pour chaque joueur `a` de `candidat[i]` et joueur `b` de `candidat[j]`
+       - Exclure les joueurs avec `groupe` non null/undefined
+       - Vérifier `|a.niveau - b.niveau| ≤ 1`
+       - Simuler le swap : recalculer la moyenne de chaque équipe après échange
+       - Vérifier que la variation de moyenne par équipe reste ≤ 0.2 vs `propositionOriginale`
+       - Si valide, stocker le candidat `{ i, j, idxA, idxB, deltaMoyenne }`
+    3. Si aucun candidat → toast "Aucune alternative disponible", return
+    4. Trier les candidats par `deltaMoyenne` ascending
+    5. Sélectionner aléatoirement 1 à 3 swaps non conflictuels (un joueur ne peut être swappé qu'une fois)
+    6. Appliquer les swaps sur `candidat`
+    7. Générer la signature via `_signatureEquipes(candidat)`
+    8. Si signature déjà dans `historiquePropositions` → recommencer (tentative suivante)
+    9. Sinon → configuration unique trouvée, sortir de la boucle
+  - **Si 10 tentatives échouent** → toast "Toutes les variantes proches ont été explorées", return
+  - **Appliquer** la configuration retenue :
+    - Recalculer pour chaque équipe : `niveauTotal`, `meilleurNiveau`, tous les compteurs de postes (`avant`, `arriere`, `ailier`, `centre`, `pivot`, `arr_centre`, `indifferent`)
+    - Stocker dans `window.AppCore.equipes`
+    - Ajouter la signature dans `window.AppCore.historiquePropositions`
+    - Mettre `window.AppCore.sessionValidee = null`
+    - Vider `resultatsContainer` si existant
+    - Appeler `afficherEquipes()`
+
+- [x] **`assets/js/teams.js`**  dans `autreProposition()`, gérer la résolution du poste `indifferent` après swap
+  - Quand un joueur avec poste original `indifferent` arrive dans une nouvelle équipe, recalculer son poste résolu (`avant` ou `arriere`) en fonction de la composition de l'équipe cible
+  - Mettre à jour le compteur de poste de l'équipe source (décrémenter l'ancien poste) et de l'équipe cible (incrémenter le nouveau poste)
+
+- [x] **`assets/js/teams.js`**  modifier `afficherEquipes()` : ajouter le bouton "Autre proposition"
+  - Localiser le bloc `if (!window.AppCore.sessionValidee)` qui génère le bouton "Valider cette soirée"
+  - Remplacer le `<div>` wrapper par un conteneur flex : `<div class="equipes-actions">`
+  - Ajouter le bouton "Autre proposition" avec icône `shuffle` :
+    ```html
+    <button onclick="window.AppTeams.autreProposition()" class="btn btn-secondary" style="font-size: 16px; padding: 14px 32px;">
+        <span class="material-icons">shuffle</span>
+        Autre proposition
+    </button>
+    ```
+  - Le bouton "Valider cette soirée" reste inchangé à côté
+  - Les deux boutons sont dans le même conteneur `.equipes-actions`
+
+- [x] **`assets/js/teams.js`**  modifier `changerEquipe()` : invalider le mécanisme de proposition
+  - Après le déplacement manuel d'un joueur, ajouter :
+    - `window.AppCore.propositionOriginale = null;`
+    - `window.AppCore.historiquePropositions = [];`
+  - Effet : le bouton "Autre proposition" disparaît au prochain `afficherEquipes()` car `propositionOriginale` est null
+
+- [x] **`assets/js/teams.js`**  ajouter `autreProposition` dans l'export `window.AppTeams = { … }`
+
+- [x] **`assets/css/components.css`**  ajouter le style du conteneur d'actions équipes
+  ```css
+  .equipes-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+  ```
+
+### Points d'attention
+
+- **Pas de dérive** : chaque alternative repart de `propositionOriginale`, jamais de la proposition courante. Empêche l'accumulation de micro-variations qui pourraient déséquilibrer les équipes.
+- **Boucle infinie** : la limite de 10 tentatives et le toast informatif couvrent le cas où le pool de swaps est trop restreint (peu de joueurs, niveaux très hétérogènes).
+- **1 seule équipe** : si `propositionOriginale.length < 2`, aucun swap possible. La garde en entrée de `autreProposition()` le couvre.
+- **Résolution `indifferent`** : un joueur `indifferent` qui change d'équipe doit voir son poste résolu recalculé selon la composition de l'équipe cible. Les compteurs de poste des deux équipes doivent être mis à jour.
+- **`changerEquipe()` invalide** : tout déplacement manuel rend `propositionOriginale` obsolète. Réinitialiser les deux variables et cacher le bouton empêche des alternatives incohérentes.
+- **Signature indépendante de l'ordre des équipes** : trier les strings d'équipes entre elles, pas seulement les joueurs à l'intérieur. Sinon deux configurations identiques avec des équipes permutées seraient vues comme différentes.
+- **Pas de test unitaire explicite dans ce plan** : envisager d'ajouter des tests pour `_signatureEquipes()` et `autreProposition()` avec données mockées dans une future section tests.
+- **Performance** : la double boucle sur les paires de joueurs est O(n² × k²) avec k = nb joueurs/équipe. Acceptable pour ≤ 30 joueurs / 4 équipes mais non optimisée au-delà.
+
+---
+
+## 12. Bugfix "Autre proposition" — correctifs post code-review
+
+**Contexte** : code-review de la §11 — 2 bugs MAJOR (M1, M2) et 3 MINOR (m1, m2, m3) identifiés dans `assets/js/teams.js`.
+
+**Décisions validées** :
+- Tous les correctifs portent sur `assets/js/teams.js`, fonction `autreProposition()` et `afficherEquipes()`
+- Ordre d'application : M2+m1 → M1 → m2 → m3
+- Aucun nouveau fichier, aucun nouvel export, aucune modification de schéma DB
+
+### Fichiers à modifier
+
+| Fichier | Nature de la modification |
+|---|---|
+| `assets/js/teams.js` | Correctifs M1, M2, m1, m2, m3 dans `autreProposition()` et `afficherEquipes()` |
+
+### Tâches
+
+- [x] **M2 — `autreProposition()` : corriger la résolution du poste `indifferent` après swap**
+  - Les variables `origA` / `origB` lisent le poste depuis `propositionOriginale`, qui contient déjà des postes résolus (`avant`/`arriere`) et jamais `indifferent`
+  - Remplacer les lookups `origA = window.AppCore.propositionOriginale[swap.i].joueurs[swap.idxA]` et `origB = ...` par des lookups dans `window.AppCore.joueurs` via l'ID du joueur :
+    ```js
+    const origA = window.AppCore.joueurs.find(x => x.id === joueurA.id);
+    const origB = window.AppCore.joueurs.find(x => x.id === joueurB.id);
+    ```
+  - Utiliser `origB.poste === 'indifferent'` et `origA.poste === 'indifferent'` pour les conditions de re-résolution
+  - Concerne les deux blocs de résolution `indifferent` après `candidat[swap.i].joueurs[swap.idxA] = { ...joueurB }` et `candidat[swap.j].joueurs[swap.idxB] = { ...joueurA }`
+
+- [x] **m1 — `autreProposition()` : supprimer les conditions `if` externes mortes**
+  - Les deux outer `if` autour de la re-résolution `indifferent` :
+    - `if (origB.poste === 'indifferent' || joueurB.poste === 'avant' || joueurB.poste === 'arriere')`
+    - `if (origA.poste === 'indifferent' || joueurA.poste === 'avant' || joueurA.poste === 'arriere')`
+  - Ces conditions sont toujours vraies (tout joueur a un poste parmi ces valeurs ou d'autres qui sont couvertes) et masquent la vraie logique
+  - Supprimer ces deux `if` externes, ne conserver que les `if (origB.poste === 'indifferent')` et `if (origA.poste === 'indifferent')` internes
+  - **Appliquer en même temps que M2** car même bloc de code
+
+- [x] **M1 — `autreProposition()` : ajouter une validation cumulative de moyenne après application des swaps**
+  - Après la boucle `for (const swap of choisis) { … }` (application des swaps) et **avant** le check de signature `_signatureEquipes(candidat)` :
+  - Insérer un bloc de validation :
+    ```js
+    // Validation cumulative : toutes les moyennes doivent rester dans ±0.2
+    let moyennesOk = true;
+    for (let e = 0; e < candidat.length; e++) {
+        const moy = candidat[e].joueurs.length > 0
+            ? candidat[e].joueurs.reduce((acc, j) => acc + (j.niveau || 0), 0) / candidat[e].joueurs.length
+            : 0;
+        if (Math.abs(moy - moyennesOriginales[e]) > 0.2) {
+            moyennesOk = false;
+            break;
+        }
+    }
+    if (!moyennesOk) continue;
+    ```
+  - Ce bloc couvre le cas où 2–3 swaps individuellement valides produisent une dérive cumulative dépassant le seuil ±0.2 sur une équipe
+
+- [x] **m2 — `autreProposition()` : unifier le check `groupe` avec `creerEquipes()`**
+  - Ligne actuelle : `if (a.groupe != null || b.groupe != null) continue;`
+  - Remplacer par : `if (a.groupe || b.groupe) continue;`
+  - Aligne le comportement avec `creerEquipes()` qui utilise un truthy check (`if (j.groupe)`)
+  - Empêche aussi le cas `groupe === 0` (qui serait falsy) de casser la logique — cohérent car `0` n'est pas un numéro de groupe valide
+
+- [x] **m3 — `afficherEquipes()` : corriger la faille XSS sur `joueursIgnores`**
+  - Ligne actuelle dans le bloc `if (scoresObj[idx].joueursIgnores.length > 0)` :
+    ```js
+    scoresObj[idx].joueursIgnores.map(j => j.nom).join(', ')
+    ```
+  - Remplacer par :
+    ```js
+    scoresObj[idx].joueursIgnores.map(j => window.AppCore.escapeHtml(j.nom)).join(', ')
+    ```
+  - Les noms de joueurs dans le reste de `afficherEquipes()` sont déjà échappés via `window.AppCore.escapeHtml(j.nom)` — ce point était un oubli isolé
+
+### Points d'attention
+
+- **M2 dépend de `window.AppCore.joueurs`** : ce tableau contient les joueurs actifs ET inactifs chargés pour le club courant. Un joueur actif participant aux équipes y sera toujours présent. Pas de risque de `find()` retournant `undefined` tant que les données sont cohérentes.
+- **M1 — Ordre d'insertion** : le bloc de validation cumulative doit se trouver APRÈS la boucle d'application des swaps et la résolution `indifferent`, mais AVANT le calcul de signature. Le `continue` renvoie à la boucle `for (let tentative ...)`.
+- **m1 — Ne pas supprimer les blocs internes** : seules les conditions `if` _externes_ sont mortes. Les blocs `if (origX.poste === 'indifferent')` internes restent indispensables.
+- **m2 — Valeur `0`** : `groupe === 0` est théoriquement possible en DB (INTEGER). Le truthy check le traite comme "pas de groupe", cohérent avec le reste du code.
+- **m3 — Surface XSS limitée** : les noms sont saisis par l'utilisateur ou importés via CSV. Le risque est réel en contexte multi-utilisateur (Supabase partagé).
+- **Pas de test unitaire ajouté dans ce plan** : les correctifs portent sur de la logique interne de `autreProposition()` difficile à tester unitairement sans mock complet. Envisager un test d'intégration dans une future section.

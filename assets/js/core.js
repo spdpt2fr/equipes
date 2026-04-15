@@ -23,6 +23,8 @@ let historiqueSessions = [];
 let currentUser = null;
 let currentRole = 'admin'; // Compatibilite legacy tant que l'auth n'est pas activee
 let levelSecurityEnforced = false;
+let propositionOriginale = null;
+let historiquePropositions = [];
 
 // === FONCTIONS UTILITAIRES ===
 function updateStatus(message, className) {
@@ -97,6 +99,8 @@ window.AppCore = {
     currentUser,
     currentRole,
     levelSecurityEnforced,
+    propositionOriginale,
+    historiquePropositions,
     updateStatus,
     showToast,
     isAdmin,
