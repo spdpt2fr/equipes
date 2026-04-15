@@ -35,7 +35,7 @@
 
         <!-- Navigation par onglets -->
         <nav class="tab-bar">
-            <button class="tab-btn active" data-tab="gestion">🏒 Gestion</button>
+            <button class="tab-btn active" data-tab="gestion">🏒 Équipes</button>
             <button class="tab-btn" data-tab="historique">📅 Historique</button>
             <button class="tab-btn" data-tab="stats">📊 Stats</button>
             <button class="tab-btn" data-tab="algorithme">ℹ️ Comment ça marche</button>
@@ -90,42 +90,6 @@
                 <button id="ajouterBtn" class="btn btn-primary">
                     <span class="material-icons">add</span>
                     Ajouter Joueur
-                </button>
-            </div>
-        </div>
-
-        <!-- Import / Export et Actions -->
-        <div class="card">
-            <h2 class="card-title">
-                <span class="material-icons">import_export</span>
-                Import / Export et Actions
-            </h2>
-            <div class="actions-grid">
-                <div class="file-input-wrapper">
-                    <input accept=".txt,.csv" id="fichierJoueurs" type="file" style="display: none;">
-                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('fichierJoueurs').click();">
-                        <span class="material-icons">upload_file</span>
-                        Importer fichier
-                    </button>
-                </div>
-                <button id="exportBtn" class="btn btn-secondary">
-                    <span class="material-icons">download</span>
-                    Exporter Joueurs
-                </button>
-                <button id="exportMatchsBtn" class="btn btn-secondary">
-                    <span class="material-icons">emoji_events</span>
-                    Exporter Matchs
-                </button>
-                <div class="file-input-wrapper">
-                    <input accept=".json" id="fichierMatchs" type="file" style="display: none;">
-                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('fichierMatchs').click();">
-                        <span class="material-icons">upload</span>
-                        Importer Matchs
-                    </button>
-                </div>
-                <button id="syncBtn" class="btn btn-warning">
-                    <span class="material-icons">sync</span>
-                    Synchroniser
                 </button>
             </div>
         </div>
@@ -197,6 +161,41 @@
 
         <!-- Statistiques joueurs -->
         <div id="section-stats" class="tab-section">
+            <!-- Import / Export et Actions -->
+            <div class="card">
+                <h2 class="card-title">
+                    <span class="material-icons">import_export</span>
+                    Import / Export et Actions
+                </h2>
+                <div class="actions-grid">
+                    <div class="file-input-wrapper">
+                        <input accept=".txt,.csv" id="fichierJoueurs" type="file" style="display: none;">
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('fichierJoueurs').click();">
+                            <span class="material-icons">upload_file</span>
+                            Importer fichier
+                        </button>
+                    </div>
+                    <button id="exportBtn" class="btn btn-secondary">
+                        <span class="material-icons">download</span>
+                        Exporter Joueurs
+                    </button>
+                    <button id="exportMatchsBtn" class="btn btn-secondary">
+                        <span class="material-icons">emoji_events</span>
+                        Exporter Matchs
+                    </button>
+                    <div class="file-input-wrapper">
+                        <input accept=".json" id="fichierMatchs" type="file" style="display: none;">
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('fichierMatchs').click();">
+                            <span class="material-icons">upload</span>
+                            Importer Matchs
+                        </button>
+                    </div>
+                    <button id="syncBtn" class="btn btn-warning">
+                        <span class="material-icons">sync</span>
+                        Synchroniser
+                    </button>
+                </div>
+            </div>
             <div id="statsContainer"></div>
         </div>
 
