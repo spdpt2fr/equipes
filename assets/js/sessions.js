@@ -1,50 +1,50 @@
 // ===================================================================
-// SESSIONS.JS - Historique des soirÃ©es et Ã©volution des scores
-// Module de gestion des sessions de jeu, rÃ©sultats et ajustements
+// SESSIONS.JS - Historique des soirées et évolution des scores
+// Module de gestion des sessions de jeu, résultats et ajustements
 // ===================================================================
 
 const ELO_K = 0.3;       // Facteur K Elo - amplitude max du delta par match
-const ELO_DIVISOR = 4;   // Diviseur d'Ã©chelle (adaptÃ© aux niveaux 1-10)
+const ELO_DIVISOR = 4;   // Diviseur d'échelle (adapté aux niveaux 1-10)
 
 /**
- * Calcule le delta Elo pour une Ã©quipe sur un match.
- * @private - exposÃ©e dans window.AppSessions uniquement pour les tests
- * @param {number} myAvg    - Niveau moyen de l'Ã©quipe
+ * Calcule le delta Elo pour une équipe sur un match.
+ * @private - exposée dans window.AppSessions uniquement pour les tests
+ * @param {number} myAvg    - Niveau moyen de l'équipe
  * @param {number} oppAvg   - Niveau moyen de l'adversaire
- * @param {number} resultat - 1=victoire, 0=dÃ©faite, 0.5=nul
- * @returns {number} delta Ã  appliquer (positif=gain, nÃ©gatif=perte)
- * @note Les nuls (0.5) produisent un delta non nul proportionnel Ã  l'Ã©cart de force
+ * @param {number} resultat - 1=victoire, 0=défaite, 0.5=nul
+ * @returns {number} delta à appliquer (positif=gain, négatif=perte)
+ * @note Les nuls (0.5) produisent un delta non nul proportionnel à l'écart de force
  */
 function _calculerDeltaMatch(myAvg, oppAvg, resultat) {
     const expected = 1 / (1 + Math.pow(10, (oppAvg - myAvg) / ELO_DIVISOR));
     return ELO_K * (resultat - expected);
 }
 
-// Variables mÃ©moire pour la re-notation
+// Variables mémoire pour la re-notation
 let _ancienDeltaRenotation = {};
 let _dateSessionRenotation = '';
 
-// === VALIDATION DE SESSION (sauvegarder les Ã©quipes comme soirÃ©e) ===
+// === VALIDATION DE SESSION (sauvegarder les équipes comme soirée) ===
 async function validerSession() {
     if (window.AppCore.equipes.length === 0) {
-        window.AppCore.showToast('Aucune Ã©quipe Ã  valider', true);
+        window.AppCore.showToast('Aucune équipe à valider', true);
         return;
     }
 
     if (!window.AppCore.isOnline) {
-        window.AppCore.showToast('Connexion requise pour valider une soirÃ©e', true);
+        window.AppCore.showToast('Connexion requise pour valider une soirée', true);
         return;
     }
 
     if (window.AppCore.sessionValidee) {
-        window.AppCore.showToast('Cette composition est dÃ©jÃ  validÃ©e', true);
+        window.AppCore.showToast('Cette composition est déjà validée', true);
         return;
     }
 
-    if (!confirm('Valider ces Ã©quipes comme soirÃ©e de jeu ?')) return;
+    if (!confirm('Valider ces équipes comme soirée de jeu ?')) return;
 
     try {
-        // 1. CrÃ©er la session
+        // 1. Créer la session
         const { data: session, error: errSession } = await window.AppCore.supabaseClient
             .from('sessions')
             .insert([{
@@ -59,7 +59,7 @@ async function validerSession() {
 
         const sessionTeamIds = [];
 
-        // 2. Sauvegarder chaque Ã©quipe et ses joueurs
+        // 2. Sauvegarder chaque équipe et ses joueurs
         for (let i = 0; i < window.AppCore.equipes.length; i++) {
             const equipe = window.AppCore.equipes[i];
 
@@ -76,7 +76,7 @@ async function validerSession() {
             if (errTeam) throw errTeam;
             sessionTeamIds.push(team.id);
 
-            // 3. Sauvegarder les joueurs de cette Ã©quipe
+            // 3. Sauvegarder les joueurs de cette équipe
             const joueursBatch = equipe.joueurs.map(j => ({
                 session_team_id: team.id,
                 player_id: j.id || null,
@@ -97,9 +97,9 @@ async function validerSession() {
             teamIds: sessionTeamIds
         };
 
-        window.AppCore.showToast('âœ… SoirÃ©e validÃ©e et sauvegardÃ©e !');
+        window.AppCore.showToast('✅ Soirée validée et sauvegardée !');
 
-        // Afficher l'interface de rÃ©sultats
+        // Afficher l'interface de résultats
         afficherInterfaceResultats(session.id, sessionTeamIds);
 
         // Recharger l'historique
@@ -111,7 +111,7 @@ async function validerSession() {
     }
 }
 
-// === INTERFACE DE SAISIE DES RÃ‰SULTATS ===
+// === INTERFACE DE SAISIE DES RÉSULTATS ===
 function afficherInterfaceResultats(sessionId, teamIds) {
     const container = document.getElementById('resultatsContainer');
     if (!container) return;
@@ -125,7 +125,7 @@ function afficherInterfaceResultats(sessionId, teamIds) {
         }
     }
 
-    // Construire la map teamId â†’ noms des joueurs
+    // Construire la map teamId → noms des joueurs
     const teamPlayersMap = {};
 
     // Cas 1 : depuis l'historique (re-notation)
@@ -136,7 +136,7 @@ function afficherInterfaceResultats(sessionId, teamIds) {
         });
     }
 
-    // Cas 2 : depuis les Ã©quipes gÃ©nÃ©rÃ©es en live
+    // Cas 2 : depuis les équipes générées en live
     if (Object.keys(teamPlayersMap).length === 0 && window.AppCore.equipes && window.AppCore.equipes.length === teamIds.length) {
         teamIds.forEach((id, i) => {
             const eq = window.AppCore.equipes[i];
@@ -155,7 +155,7 @@ function afficherInterfaceResultats(sessionId, teamIds) {
         <div class="card">
             <h2 class="card-title">
                 <span class="material-icons">scoreboard</span>
-                RÃ©sultats de la soirÃ©e
+                Résultats de la soirée
             </h2>
             <div class="results-grid">
     `;
@@ -165,28 +165,28 @@ function afficherInterfaceResultats(sessionId, teamIds) {
             <div class="match-card">
                 <div class="match-title">
                     <span class="material-icons">sports</span>
-                    Match ${idx + 1} : Ã‰quipe ${p.i + 1} vs Ã‰quipe ${p.j + 1}
+                    Match ${idx + 1} : Équipe ${p.i + 1} vs Équipe ${p.j + 1}
                 </div>
                 <div class="match-options">
                     <label class="match-option">
                         <input type="radio" name="match_${idx}" value="${p.teamId1}" 
                                data-eq1="${p.teamId1}" data-eq2="${p.teamId2}">
-                        <span class="match-label win">ðŸ† Ã‰quipe ${p.i + 1} ${getPlayers(p.teamId1)}</span>
+                        <span class="match-label win">🏆 Équipe ${p.i + 1} ${getPlayers(p.teamId1)}</span>
                     </label>
                     <label class="match-option">
                         <input type="radio" name="match_${idx}" value="${p.teamId2}" 
                                data-eq1="${p.teamId1}" data-eq2="${p.teamId2}">
-                        <span class="match-label win">ðŸ† Ã‰quipe ${p.j + 1} ${getPlayers(p.teamId2)}</span>
+                        <span class="match-label win">🏆 Équipe ${p.j + 1} ${getPlayers(p.teamId2)}</span>
                     </label>
                     <label class="match-option">
                         <input type="radio" name="match_${idx}" value="draw" 
                                data-eq1="${p.teamId1}" data-eq2="${p.teamId2}">
-                        <span class="match-label draw">ðŸ¤ Match nul</span>
+                        <span class="match-label draw">🤝 Match nul</span>
                     </label>
                     <label class="match-option">
                         <input type="radio" name="match_${idx}" value="skip" checked 
                                data-eq1="${p.teamId1}" data-eq2="${p.teamId2}">
-                        <span class="match-label skip">â­ï¸ Non jouÃ©</span>
+                        <span class="match-label skip">⏭️ Non joué</span>
                     </label>
                 </div>
             </div>
@@ -198,7 +198,7 @@ function afficherInterfaceResultats(sessionId, teamIds) {
             <div style="text-align: center; margin-top: 20px;">
                 <button onclick="window.AppSessions.sauvegarderResultats(${sessionId})" class="btn btn-primary">
                     <span class="material-icons">save</span>
-                    Sauvegarder les rÃ©sultats
+                    Sauvegarder les résultats
                 </button>
             </div>
         </div>
@@ -207,7 +207,7 @@ function afficherInterfaceResultats(sessionId, teamIds) {
     container.innerHTML = html;
 }
 
-// === SAUVEGARDER LES RÃ‰SULTATS ===
+// === SAUVEGARDER LES RÉSULTATS ===
 async function sauvegarderResultats(sessionId) {
     try {
         const container = document.getElementById('resultatsContainer');
@@ -227,11 +227,11 @@ async function sauvegarderResultats(sessionId) {
         });
 
         if (resultats.length === 0) {
-            window.AppCore.showToast('Aucun rÃ©sultat Ã  sauvegarder (tout est "Non jouÃ©")', true);
+            window.AppCore.showToast('Aucun résultat à sauvegarder (tout est "Non joué")', true);
             return;
         }
 
-        // Supprimer d'Ã©ventuels anciens rÃ©sultats pour cette session
+        // Supprimer d'éventuels anciens résultats pour cette session
         const { error: errDelete } = await window.AppCore.supabaseClient
             .from('match_results')
             .delete()
@@ -239,30 +239,30 @@ async function sauvegarderResultats(sessionId) {
 
         if (errDelete) throw errDelete;
 
-        // InsÃ©rer les nouveaux rÃ©sultats
+        // Insérer les nouveaux résultats
         const { error } = await window.AppCore.supabaseClient
             .from('match_results')
             .insert(resultats);
 
         if (error) throw error;
 
-        // Marquer la session comme ayant des rÃ©sultats
+        // Marquer la session comme ayant des résultats
         await window.AppCore.supabaseClient
             .from('sessions')
             .update({ resultats_saisis: true })
             .eq('id', sessionId);
 
-        window.AppCore.showToast('âœ… RÃ©sultats sauvegardÃ©s !');
+        window.AppCore.showToast('✅ Résultats sauvegardés !');
 
         // Calculer et proposer les ajustements
         const ajustements = await calculerAjustements(sessionId);
         afficherAjustements(sessionId, ajustements);
 
-        // RafraÃ®chir l'historique
+        // Rafraîchir l'historique
         await chargerHistorique();
 
     } catch (error) {
-        console.error('Erreur sauvegarde rÃ©sultats:', error);
+        console.error('Erreur sauvegarde résultats:', error);
         window.AppCore.showToast('Erreur: ' + error.message, true);
     }
 }
@@ -270,13 +270,13 @@ async function sauvegarderResultats(sessionId) {
 // === CALCULER LES AJUSTEMENTS DE NIVEAU ===
 async function calculerAjustements(sessionId) {
     try {
-        // Charger les Ã©quipes avec leurs joueurs
+        // Charger les équipes avec leurs joueurs
         const { data: teams, error: errTeams } = await window.AppCore.supabaseClient
             .from('session_teams')
             .select('*, session_players(*)')
             .eq('session_id', sessionId);
 
-        // Charger les rÃ©sultats
+        // Charger les résultats
         const { data: results, error: errResults } = await window.AppCore.supabaseClient
             .from('match_results')
             .select('*')
@@ -286,7 +286,7 @@ async function calculerAjustements(sessionId) {
         if (errResults) throw errResults;
         if (!teams || !results || results.length === 0) return [];
 
-        // Calculer la moyenne de niveau par Ã©quipe
+        // Calculer la moyenne de niveau par équipe
         const teamAvg = {};
         teams.forEach(t => {
             const players = t.session_players || [];
@@ -295,7 +295,7 @@ async function calculerAjustements(sessionId) {
                 : 0;
         });
 
-        // Pour chaque joueur, calculer le delta basÃ© sur les rÃ©sultats
+        // Pour chaque joueur, calculer le delta basé sur les résultats
         const ajustements = {};
 
         teams.forEach(team => {
@@ -316,13 +316,13 @@ async function calculerAjustements(sessionId) {
                         myTeamId = team.id;
                         oppTeamId = result.equipe1_id;
                     } else {
-                        return; // Ce match ne concerne pas cette Ã©quipe
+                        return; // Ce match ne concerne pas cette équipe
                     }
 
                     const myAvg = teamAvg[myTeamId] || 5;
                     const oppAvg = teamAvg[oppTeamId] || 5;
 
-                    // Nul=0.5 â†’ petit delta Â± selon force adverse (comportement Elo, â‰  ancienne formule DELTA_BASE oÃ¹ nul=0)
+                    // Nul=0.5 → petit delta ± selon force adverse (comportement Elo, ≠ ancienne formule DELTA_BASE où nul=0)
                     const res = result.gagnant_id == null ? 0.5
                               : result.gagnant_id === myTeamId ? 1 : 0;
                     totalDelta += _calculerDeltaMatch(myAvg, oppAvg, res);
@@ -353,7 +353,7 @@ async function calculerAjustements(sessionId) {
     }
 }
 
-// === AFFICHER LES AJUSTEMENTS PROPOSÃ‰S ===
+// === AFFICHER LES AJUSTEMENTS PROPOSÉS ===
 function afficherAjustements(sessionId, ajustements) {
     if (window.AppCore.canEditNiveaux && !window.AppCore.canEditNiveaux()) {
         window.AppCore.showToast('Ajustements reserves admin', true);
@@ -366,12 +366,12 @@ function afficherAjustements(sessionId, ajustements) {
     if (ajustements.length === 0) {
         container.insertAdjacentHTML('beforeend', `
             <div class="card" style="margin-top: 16px;">
-                <p style="text-align: center; color: #666;">Aucun ajustement Ã  proposer pour cette soirÃ©e.</p>
+                <p style="text-align: center; color: #666;">Aucun ajustement à proposer pour cette soirée.</p>
             </div>`);
         return;
     }
 
-    // SÃ©parer les joueurs modifiÃ©s et non modifiÃ©s
+    // Séparer les joueurs modifiés et non modifiés
     const modifies = ajustements.filter(a => a.nouveauNiveau !== a.niveauActuel);
     const inchanges = ajustements.filter(a => a.nouveauNiveau === a.niveauActuel);
 
@@ -379,12 +379,12 @@ function afficherAjustements(sessionId, ajustements) {
         <div class="card" style="margin-top: 16px;">
             <h2 class="card-title">
                 <span class="material-icons">trending_up</span>
-                Ajustements proposÃ©s
+                Ajustements proposés
             </h2>
             <p class="ajustements-info">
-                BasÃ© sur les rÃ©sultats : victoire contre une Ã©quipe forte = plus gros bonus,
-                dÃ©faite contre une Ã©quipe faible = plus gros malus.
-                Les matchs nuls entraÃ®nent un lÃ©ger ajustement selon la force adverse.
+                Basé sur les résultats : victoire contre une équipe forte = plus gros bonus,
+                défaite contre une équipe faible = plus gros malus.
+                Les matchs nuls entraînent un léger ajustement selon la force adverse.
             </p>
             <div class="ajustements-list">
     `;
@@ -394,22 +394,22 @@ function afficherAjustements(sessionId, ajustements) {
     modifies.forEach(a => {
         const deltaStr = a.delta >= 0 ? `+${a.delta.toFixed(2)}` : a.delta.toFixed(2);
         const deltaClass = a.delta > 0 ? 'delta-positive' : 'delta-negative';
-        const arrow = a.nouveauNiveau > a.niveauActuel ? 'â¬†ï¸' : 'â¬‡ï¸';
+        const arrow = a.nouveauNiveau > a.niveauActuel ? '⬆️' : '⬇️';
 
         html += `
             <div class="ajustement-row ${deltaClass}">
                 <span class="ajustement-nom">${window.AppCore.escapeHtml(a.nom)}</span>
                 <span class="ajustement-detail">
-                    ${arrow} ${a.niveauActuel} â†’ <strong>${a.nouveauNiveau}</strong>
+                    ${arrow} ${a.niveauActuel} → <strong>${a.nouveauNiveau}</strong>
                     <span class="ajustement-delta">(${deltaStr})</span>
                 </span>
             </div>
         `;
     });
 
-    // Puis les joueurs inchangÃ©s
+    // Puis les joueurs inchangés
     if (inchanges.length > 0) {
-        html += `<div class="ajustement-separator">InchangÃ©s</div>`;
+        html += `<div class="ajustement-separator">Inchangés</div>`;
         inchanges.forEach(a => {
             const deltaStr = a.delta >= 0 ? `+${a.delta.toFixed(2)}` : a.delta.toFixed(2);
             html += `
@@ -477,18 +477,18 @@ async function appliquerAjustements(sessionId) {
             modifies++;
         }
 
-        // Marquer session comme ajustements appliquÃ©s
+        // Marquer session comme ajustements appliqués
         await window.AppCore.supabaseClient
             .from('sessions')
             .update({ ajustements_appliques: true })
             .eq('id', sessionId);
 
-        // Vider le container rÃ©sultats
+        // Vider le container résultats
         document.getElementById('resultatsContainer').innerHTML = '';
 
-        // RafraÃ®chir l'affichage
+        // Rafraîchir l'affichage
         if (window.afficherJoueurs) window.afficherJoueurs();
-        window.AppCore.showToast(`âœ… ${modifies} niveau(x) de joueur(s) ajustÃ©(s)`);
+        window.AppCore.showToast(`✅ ${modifies} niveau(x) de joueur(s) ajusté(s)`);
 
         // Recharger l'historique
         await chargerHistorique();
@@ -499,7 +499,7 @@ async function appliquerAjustements(sessionId) {
     }
 }
 
-// === CHARGER L'HISTORIQUE DES SOIRÃ‰ES ===
+// === CHARGER L'HISTORIQUE DES SOIRÉES ===
 async function chargerHistorique() {
     try {
         if (!window.AppCore.isOnline || !window.AppCore.clubActuel) return;
@@ -545,7 +545,7 @@ function afficherHistorique() {
         <div class="card">
             <h2 class="card-title">
                 <span class="material-icons">history</span>
-                Historique des soirÃ©es (${sessions.length})
+                Historique des soirées (${sessions.length})
             </h2>
     `;
 
@@ -556,18 +556,18 @@ function afficherHistorique() {
         const teams = (session.session_teams || []).sort((a, b) => a.numero_equipe - b.numero_equipe);
         const results = session.match_results || [];
 
-        // Map team ID â†’ team object
+        // Map team ID → team object
         const teamMap = {};
         teams.forEach(t => { teamMap[t.id] = t; });
 
         html += `
             <div class="session-card">
                 <div class="session-header">
-                    <span class="session-date">ðŸ“… ${date}</span>
+                    <span class="session-date">📅 ${date}</span>
                     <div class="session-badges">
-                        <span class="badge">${session.nb_equipes} Ã©q.</span>
-                        ${session.resultats_saisis ? '<span class="badge badge-success">RÃ©sultats âœ“</span>' : '<span class="badge badge-pending">En attente</span>'}
-                        ${session.ajustements_appliques ? '<span class="badge badge-success">Ajustements âœ“</span>' : ''}
+                        <span class="badge">${session.nb_equipes} éq.</span>
+                        ${session.resultats_saisis ? '<span class="badge badge-success">Résultats ✓</span>' : '<span class="badge badge-pending">En attente</span>'}
+                        ${session.ajustements_appliques ? '<span class="badge badge-success">Ajustements ✓</span>' : ''}
                     </div>
                 </div>
                 <div class="session-teams-list">
@@ -580,7 +580,7 @@ function afficherHistorique() {
             } else {
                 joueurs.sort((a, b) => a.player_name.localeCompare(b.player_name, 'fr', { sensitivity: 'base' }));
             }
-            // Compter les victoires pour cette Ã©quipe
+            // Compter les victoires pour cette équipe
             const matchsEquipe = results.filter(r => r.equipe1_id === team.id || r.equipe2_id === team.id);
             const victoires = matchsEquipe.filter(r => r.gagnant_id === team.id).length;
             const nuls = matchsEquipe.filter(r => r.gagnant_id == null).length;
@@ -588,7 +588,7 @@ function afficherHistorique() {
 
             html += `
                 <div class="session-team-row">
-                    <strong>Ã‰q. ${team.numero_equipe}</strong>
+                    <strong>Éq. ${team.numero_equipe}</strong>
                     ${results.length > 0 ? `<span class="session-record">${victoires}V ${nuls}N ${defaites}D</span>` : ''}
                     ${canViewNiveaux ? `<span class="session-total">(${team.niveau_total} pts)</span>` : ''}
                     <span class="session-players-list">
@@ -600,7 +600,7 @@ function afficherHistorique() {
 
         html += '</div>';
 
-        // DÃ©tails des rÃ©sultats
+        // Détails des résultats
         if (results.length > 0) {
             html += '<div class="session-results">';
             results.forEach(r => {
@@ -608,22 +608,22 @@ function afficherHistorique() {
                 const eq2 = teamMap[r.equipe2_id];
                 const gagnant = teamMap[r.gagnant_id];
                 if (eq1 && eq2 && gagnant) {
-                    html += `<span class="result-pill">Ã‰q.${eq1.numero_equipe} vs Ã‰q.${eq2.numero_equipe} â†’ ðŸ† Ã‰q.${gagnant.numero_equipe}</span>`;
+                    html += `<span class="result-pill">Éq.${eq1.numero_equipe} vs Éq.${eq2.numero_equipe} → 🏆 Éq.${gagnant.numero_equipe}</span>`;
                 } else if (eq1 && eq2) {
-                    html += `<span class="result-pill draw">Ã‰q.${eq1.numero_equipe} vs Ã‰q.${eq2.numero_equipe} â†’ ðŸ¤ Match nul</span>`;
+                    html += `<span class="result-pill draw">Éq.${eq1.numero_equipe} vs Éq.${eq2.numero_equipe} → 🤝 Match nul</span>`;
                 }
             });
             html += '</div>';
         }
 
-        // Boutons d'action selon l'Ã©tat de la session
+        // Boutons d'action selon l'état de la session
         html += '<div class="session-actions">';
         if (!session.resultats_saisis) {
             const teamIds = teams.map(t => t.id);
             html += `
                 <button onclick="window.AppSessions.afficherInterfaceResultats(${session.id}, [${teamIds.join(',')}])" class="btn btn-warning btn-sm">
                     <span class="material-icons">edit</span>
-                    Saisir rÃ©sultats
+                    Saisir résultats
                 </button>
             `;
         } else if (!session.ajustements_appliques && canEditNiveaux) {
@@ -637,7 +637,7 @@ function afficherHistorique() {
 
         if (window.AppCore.isOnline) {
             html += `
-                <button onclick="window.AppSessions.renoterResultats(${session.id})" class="btn btn-edit-outline btn-sm" title="Modifier les rÃ©sultats">
+                <button onclick="window.AppSessions.renoterResultats(${session.id})" class="btn btn-edit-outline btn-sm" title="Modifier les résultats">
                     <span class="material-icons">edit_note</span>
                 </button>
             `;
@@ -664,7 +664,7 @@ async function recalculerEtAfficherAjustements(sessionId) {
     }
 
     // Depuis l'onglet Historique, les ajustements s'affichent dans #resultatsContainer
-    // situÃ© dans l'onglet Gestion : basculer pour rendre le contenu visible.
+    // situé dans l'onglet Gestion : basculer pour rendre le contenu visible.
     if (window.AppUI && window.AppUI.switchTab) {
         window.AppUI.switchTab('gestion');
     }
@@ -679,7 +679,7 @@ async function recalculerEtAfficherAjustements(sessionId) {
 
 // === SUPPRIMER UNE SESSION ===
 async function supprimerSession(sessionId) {
-    if (!confirm('Supprimer cette soirÃ©e et tous ses rÃ©sultats ?')) return;
+    if (!confirm('Supprimer cette soirée et tous ses résultats ?')) return;
 
     try {
         // Cascade supprimera session_teams, session_players, match_results
@@ -690,7 +690,7 @@ async function supprimerSession(sessionId) {
 
         if (error) throw error;
 
-        window.AppCore.showToast('SoirÃ©e supprimÃ©e');
+        window.AppCore.showToast('Soirée supprimée');
         await chargerHistorique();
 
     } catch (error) {
@@ -699,7 +699,7 @@ async function supprimerSession(sessionId) {
     }
 }
 
-// === EXPORTER LES MATCHS JOUÃ‰S ===
+// === EXPORTER LES MATCHS JOUÉS ===
 async function exporterMatchs() {
     try {
         if (window.AppCore.canViewNiveaux && !window.AppCore.canViewNiveaux()) {
@@ -714,7 +714,7 @@ async function exporterMatchs() {
 
         window.AppCore.showToast('Export en cours...');
 
-        // Charger toutes les sessions du club avec donnÃ©es complÃ¨tes
+        // Charger toutes les sessions du club avec données complètes
         const { data: sessions, error } = await window.AppCore.supabaseClient
             .from('sessions')
             .select(`
@@ -731,7 +731,7 @@ async function exporterMatchs() {
         if (error) throw error;
 
         if (!sessions || sessions.length === 0) {
-            window.AppCore.showToast('Aucune soirÃ©e Ã  exporter', true);
+            window.AppCore.showToast('Aucune soirée à exporter', true);
             return;
         }
 
@@ -778,7 +778,7 @@ async function exporterMatchs() {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        window.AppCore.showToast(`${sessions.length} soirÃ©e(s) exportÃ©e(s)`);
+        window.AppCore.showToast(`${sessions.length} soirée(s) exportée(s)`);
 
     } catch (error) {
         console.error('Erreur export matchs:', error);
@@ -795,7 +795,7 @@ async function importerMatchs() {
 
     const fichier = document.getElementById('fichierMatchs').files[0];
     if (!fichier) {
-        window.AppCore.showToast('Aucun fichier sÃ©lectionnÃ©', true);
+        window.AppCore.showToast('Aucun fichier sélectionné', true);
         return;
     }
 
@@ -814,13 +814,13 @@ async function importerMatchs() {
                 return;
             }
 
-            if (!confirm(`Importer ${importData.sessions.length} soirÃ©e(s) depuis "${importData.club || 'inconnu'}" ?\n\nLes soirÃ©es existantes ne seront pas dupliquÃ©es (vÃ©rification par date + nombre d\'Ã©quipes).`)) {
+            if (!confirm(`Importer ${importData.sessions.length} soirée(s) depuis "${importData.club || 'inconnu'}" ?\n\nLes soirées existantes ne seront pas dupliquées (vérification par date + nombre d\'équipes).`)) {
                 return;
             }
 
             window.AppCore.showToast('Import en cours...');
 
-            // Charger les sessions existantes pour Ã©viter les doublons
+            // Charger les sessions existantes pour éviter les doublons
             const { data: existantes } = await window.AppCore.supabaseClient
                 .from('sessions')
                 .select('date_session, nb_equipes')
@@ -838,7 +838,7 @@ async function importerMatchs() {
                     continue;
                 }
 
-                // 1. CrÃ©er la session
+                // 1. Créer la session
                 const { data: session, error: errSession } = await window.AppCore.supabaseClient
                     .from('sessions')
                     .insert([{
@@ -853,10 +853,10 @@ async function importerMatchs() {
 
                 if (errSession) { console.error('Erreur import session:', errSession); continue; }
 
-                // Map numÃ©ro d'Ã©quipe â†’ ID insÃ©rÃ©
+                // Map numéro d'équipe → ID inséré
                 const teamNumToId = {};
 
-                // 2. CrÃ©er les Ã©quipes
+                // 2. Créer les équipes
                 for (const teamData of (sessionData.teams || [])) {
                     const { data: team, error: errTeam } = await window.AppCore.supabaseClient
                         .from('session_teams')
@@ -871,7 +871,7 @@ async function importerMatchs() {
                     if (errTeam) { console.error('Erreur import team:', errTeam); continue; }
                     teamNumToId[teamData.numero_equipe] = team.id;
 
-                    // 3. CrÃ©er les joueurs
+                    // 3. Créer les joueurs
                     if (teamData.players && teamData.players.length > 0) {
                         const playersBatch = teamData.players.map(p => ({
                             session_team_id: team.id,
@@ -887,7 +887,7 @@ async function importerMatchs() {
                     }
                 }
 
-                // 4. CrÃ©er les rÃ©sultats
+                // 4. Créer les résultats
                 for (const result of (sessionData.results || [])) {
                     const eq1Id = teamNumToId[result.equipe1_numero];
                     const eq2Id = teamNumToId[result.equipe2_numero];
@@ -914,8 +914,8 @@ async function importerMatchs() {
             // Recharger l'historique
             await chargerHistorique();
 
-            let msg = `${importees} soirÃ©e(s) importÃ©e(s)`;
-            if (ignorees > 0) msg += `, ${ignorees} ignorÃ©e(s) (doublons)`;
+            let msg = `${importees} soirée(s) importée(s)`;
+            if (ignorees > 0) msg += `, ${ignorees} ignorée(s) (doublons)`;
             window.AppCore.showToast(msg);
 
         } catch (error) {
@@ -926,7 +926,7 @@ async function importerMatchs() {
     reader.readAsText(fichier, 'utf-8');
 }
 
-// === CALCULER DELTA D'UNE SESSION (depuis snapshots en mÃ©moire) ===
+// === CALCULER DELTA D'UNE SESSION (depuis snapshots en mémoire) ===
 function calculerDeltaSession(session) {
     const teams = session.session_teams || [];
     const results = session.match_results || [];
@@ -967,7 +967,7 @@ function calculerDeltaSession(session) {
                 const myAvg = teamAvg[myTeamId] || 5;
                 const oppAvg = teamAvg[oppTeamId] || 5;
 
-                // Nul=0.5 â†’ petit delta Â± selon force adverse (comportement Elo, â‰  ancienne formule DELTA_BASE oÃ¹ nul=0)
+                // Nul=0.5 → petit delta ± selon force adverse (comportement Elo, ≠ ancienne formule DELTA_BASE où nul=0)
                 const res = result.gagnant_id == null ? 0.5
                           : result.gagnant_id === myTeamId ? 1 : 0;
                 totalDelta += _calculerDeltaMatch(myAvg, oppAvg, res);
@@ -990,7 +990,7 @@ function calculerDeltaSession(session) {
 // === RE-NOTATION : AFFICHER L'INTERFACE ===
 function renoterResultats(sessionId) {
     if (!window.AppCore.isOnline) {
-        window.AppCore.showToast('Connexion requise pour modifier les rÃ©sultats', true);
+        window.AppCore.showToast('Connexion requise pour modifier les résultats', true);
         return;
     }
 
@@ -1000,11 +1000,11 @@ function renoterResultats(sessionId) {
         return;
     }
 
-    // MÃ©moriser l'ancien delta avant toute modification
+    // Mémoriser l'ancien delta avant toute modification
     _ancienDeltaRenotation = calculerDeltaSession(session);
     _dateSessionRenotation = session.date_session;
 
-    // PrÃ©parer les Ã©quipes ordonnÃ©es
+    // Préparer les équipes ordonnées
     const teams = (session.session_teams || []).sort((a, b) => a.numero_equipe - b.numero_equipe);
     const teamIds = teams.map(t => t.id);
 
@@ -1021,10 +1021,10 @@ function renoterResultats(sessionId) {
     const saveBtn = container.querySelector(`button[onclick*="sauvegarderResultats"]`);
     if (saveBtn) {
         saveBtn.setAttribute('onclick', `window.AppSessions.sauvegarderRenotation(${sessionId})`);
-        saveBtn.innerHTML = '<span class="material-icons">save</span> Corriger les rÃ©sultats';
+        saveBtn.innerHTML = '<span class="material-icons">save</span> Corriger les résultats';
     }
 
-    // PrÃ©-cocher les rÃ©sultats existants
+    // Pré-cocher les résultats existants
     const existingResults = session.match_results || [];
     existingResults.forEach(r => {
         const radios = container.querySelectorAll('input[type="radio"][data-eq1][data-eq2]');
@@ -1062,7 +1062,7 @@ async function sauvegarderRenotation(sessionId) {
             });
         });
 
-        // Supprimer anciens rÃ©sultats et insÃ©rer nouveaux
+        // Supprimer anciens résultats et insérer nouveaux
         const { error: errDelete } = await supabase.from('match_results').delete().eq('session_id', sessionId);
         if (errDelete) throw errDelete;
 
@@ -1071,7 +1071,7 @@ async function sauvegarderRenotation(sessionId) {
             if (errInsert) throw errInsert;
         }
 
-        // Mettre Ã  jour l'Ã©tat de la session
+        // Mettre à jour l'état de la session
         await supabase.from('sessions').update({
             resultats_saisis: resultats.length > 0,
             ajustements_appliques: resultats.length > 0
@@ -1089,7 +1089,7 @@ async function sauvegarderRenotation(sessionId) {
         const ancienDelta = _ancienDeltaRenotation;
 
         // Appliquer la correction nette (nouveau_delta - ancien_delta) sur le niveau actuel.
-        // Utiliser l'union des joueurs pour aussi annuler un ancien delta qui disparaÃ®t aprÃ¨s re-notation.
+        // Utiliser l'union des joueurs pour aussi annuler un ancien delta qui disparaît après re-notation.
         const tableName = window.AppStorage.getTableName();
         const allPlayerIds = new Set([...Object.keys(ancienDelta), ...Object.keys(nouveauDelta)]);
         for (const playerId of allPlayerIds) {
@@ -1110,7 +1110,7 @@ async function sauvegarderRenotation(sessionId) {
             joueurLocal.niveau = nouveauNiveau;
         }
 
-        // Cascade : remettre en attente les sessions ultÃ©rieures avec ajustements appliquÃ©s
+        // Cascade : remettre en attente les sessions ultérieures avec ajustements appliqués
         const { data: sessionsUlterieures, error: errCascade } = await supabase
             .from('sessions')
             .select('id')
@@ -1127,12 +1127,12 @@ async function sauvegarderRenotation(sessionId) {
                 .in('id', sessionsUlterieures.map(s => s.id));
         }
 
-        // RÃ©initialiser la mÃ©moire
+        // Réinitialiser la mémoire
         _ancienDeltaRenotation = {};
         _dateSessionRenotation = '';
 
-        let msg = 'âœ… RÃ©sultats corrigÃ©s !';
-        if (nbCascade > 0) msg += ` ${nbCascade} session(s) ultÃ©rieure(s) remise(s) en attente.`;
+        let msg = '✅ Résultats corrigés !';
+        if (nbCascade > 0) msg += ` ${nbCascade} session(s) ultérieure(s) remise(s) en attente.`;
         window.AppCore.showToast(msg);
 
         if (container) container.innerHTML = '';
@@ -1140,7 +1140,7 @@ async function sauvegarderRenotation(sessionId) {
         await chargerHistorique();
 
     } catch (error) {
-        console.error('Erreur correction rÃ©sultats:', error);
+        console.error('Erreur correction résultats:', error);
         window.AppCore.showToast('Erreur: ' + error.message, true);
     }
 }
@@ -1213,13 +1213,13 @@ function afficherStats() {
             container.innerHTML = '<div class="card"><p style="text-align:center;padding:24px;color:#666">Chargement...</p></div>';
             return;
         }
-        container.innerHTML = '<div class="card"><p style="text-align:center;padding:24px;color:#666">Aucune soirÃ©e dans l\'historique.</p></div>';
+        container.innerHTML = '<div class="card"><p style="text-align:center;padding:24px;color:#666">Aucune soirée dans l\'historique.</p></div>';
         return;
     }
 
     const stats = calculerStats();
     if (stats.length === 0) {
-        container.innerHTML = '<div class="card"><p style="text-align:center;padding:24px;color:#666">Aucun joueur trouvÃ© dans l\'historique.</p></div>';
+        container.innerHTML = '<div class="card"><p style="text-align:center;padding:24px;color:#666">Aucun joueur trouvé dans l\'historique.</p></div>';
         return;
     }
 
@@ -1254,14 +1254,14 @@ function afficherStats() {
         const historiqueHtml = s.historiqueNiveau.map((h, i) => {
             const prev = s.historiqueNiveau[i - 1];
             const diff = prev ? (h.niveau - prev.niveau) : null;
-            const arrow = diff === null ? '' : diff > 0 ? ' â¬†ï¸' : diff < 0 ? ' â¬‡ï¸' : ' â†”ï¸';
+            const arrow = diff === null ? '' : diff > 0 ? ' ⬆️' : diff < 0 ? ' ⬇️' : ' ↔️';
             const d = new Date(h.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
-            return `<div class="niveau-history-row">${d} â†’ <strong>${h.niveau}</strong>${arrow}</div>`;
+            return `<div class="niveau-history-row">${d} → <strong>${h.niveau}</strong>${arrow}</div>`;
         }).join('');
 
         html += `
                         <tr class="stats-row ${rowClass}" onclick="window._toggleHistorique(${idx})">
-                            <td>${window.AppCore.escapeHtml(s.nom)} <span class="history-toggle" id="htoggle-${idx}">â–¼</span></td>
+                            <td>${window.AppCore.escapeHtml(s.nom)} <span class="history-toggle" id="htoggle-${idx}">▼</span></td>
                             <td><strong>${s.points}</strong></td>
                             <td class="stats-v">${s.victoires}</td>
                             <td class="stats-n">${s.nuls}</td>
@@ -1293,7 +1293,7 @@ function afficherStats() {
         if (row) {
             const visible = row.style.display !== 'none';
             row.style.display = visible ? 'none' : 'table-row';
-            if (toggle) toggle.textContent = visible ? 'â–¼' : 'â–²';
+            if (toggle) toggle.textContent = visible ? '▼' : '▲';
         }
     };
 }
@@ -1306,7 +1306,7 @@ function exporterStats() {
 
     const stats = calculerStats();
     if (stats.length === 0) {
-        window.AppCore.showToast('Aucune statistique Ã  exporter', true);
+        window.AppCore.showToast('Aucune statistique à exporter', true);
         return;
     }
 
@@ -1328,7 +1328,7 @@ function exporterStats() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    window.AppCore.showToast('Statistiques exportÃ©es !');
+    window.AppCore.showToast('Statistiques exportées !');
 }
 
 // === EXPORT DES FONCTIONS ===
