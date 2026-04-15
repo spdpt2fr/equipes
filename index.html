@@ -141,20 +141,12 @@
                     <input id="nombreEquipes" type="number" class="input-field" placeholder=" " min="1" required>
                     <label class="input-label">Nombre d'équipes</label>
                 </div>
-                <!-- Sélecteur de méthode — visible admins uniquement -->
-                <div class="input-group" id="methodeConstitutionGroup"
-                     style="display:flex; align-items:center; gap:12px; grid-column: 1 / -1; flex-wrap:nowrap;">
-                    <span style="font-size:13px; color:#555; white-space:nowrap;">Méthode :</span>
-                    <label style="display:inline-flex; align-items:center; gap:4px; cursor:pointer; font-size:13px; white-space:nowrap;">
-                        <input type="radio" name="methodeConstitution" value="niveauTotal" checked
-                               onchange="window.AppCore.methodeConstitution = this.value">
-                        Niveau total
-                    </label>
-                    <label style="display:inline-flex; align-items:center; gap:4px; cursor:pointer; font-size:13px; white-space:nowrap;">
-                        <input type="radio" name="methodeConstitution" value="scoreCompetitif"
-                               onchange="window.AppCore.methodeConstitution = this.value">
-                        Score compétitif
-                    </label>
+                <div class="input-group" id="methodeConstitutionGroup">
+                    <select id="methodeConstitution" class="input-field"
+                            onchange="window.AppCore.methodeConstitution = this.value">
+                        <option value="niveauTotal" selected>Niveau total</option>
+                        <option value="scoreCompetitif">Score compétitif</option>
+                    </select>
                 </div>
                 <button id="creerBtn" class="btn btn-primary">
                     <span class="material-icons">group_add</span>
