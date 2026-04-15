@@ -194,6 +194,13 @@
                         <span class="material-icons">archive</span>
                         Exporter tout
                     </button>
+                    <div class="file-input-wrapper">
+                        <input accept=".json" id="fichierTout" type="file" style="display: none;">
+                        <button type="button" class="btn btn-primary" onclick="document.getElementById('fichierTout').click();">
+                            <span class="material-icons">unarchive</span>
+                            Importer tout
+                        </button>
+                    </div>
                     <button id="syncBtn" class="btn btn-warning">
                         <span class="material-icons">sync</span>
                         Synchroniser

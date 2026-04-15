@@ -1352,6 +1352,177 @@ function exporterStats() {
     window.AppCore.showToast('Statistiques exportées !');
 }
 
+// === IMPORTER TOUT ===
+async function importerTout() {
+    if (window.AppCore.canViewNiveaux && !window.AppCore.canViewNiveaux()) {
+        window.AppCore.showToast('Import réservé admin', true);
+        return;
+    }
+
+    const fichier = document.getElementById('fichierTout').files[0];
+    if (!fichier) {
+        window.AppCore.showToast('Aucun fichier sélectionné', true);
+        return;
+    }
+
+    if (!window.AppCore.isOnline || !window.AppCore.clubActuel) {
+        window.AppCore.showToast('Connexion requise pour importer', true);
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async function(event) {
+        try {
+            const importData = JSON.parse(event.target.result);
+
+            if (!importData.version || (!importData.joueurs && !importData.sessions)) {
+                window.AppCore.showToast('Format de fichier invalide (export complet attendu)', true);
+                return;
+            }
+
+            const nbJoueurs = (importData.joueurs || []).length;
+            const nbSessions = (importData.sessions || []).length;
+
+            if (!confirm(`Importer depuis "${importData.club || 'inconnu'}" ?\n\n• ${nbJoueurs} joueur(s)\n• ${nbSessions} soirée(s)\n\nLes joueurs existants seront mis à jour. Les soirées existantes ne seront pas dupliquées.`)) {
+                return;
+            }
+
+            window.AppCore.showToast('Import complet en cours...');
+
+            let joueursAjoutés = 0;
+            let joueursMisAJour = 0;
+
+            // === IMPORT JOUEURS ===
+            const tableName = window.AppStorage.getTableName();
+            for (const j of (importData.joueurs || [])) {
+                if (!j.nom) continue;
+                const existant = window.AppCore.joueurs.find(x => x.nom.toLowerCase() === j.nom.toLowerCase());
+                try {
+                    if (existant) {
+                        // Mise à jour
+                        await window.AppCore.supabaseClient
+                            .from(tableName)
+                            .update({ niveau: j.niveau, poste: j.poste, groupe: j.groupe, actif: j.actif })
+                            .eq('id', existant.id);
+                        existant.niveau = j.niveau;
+                        existant.poste = j.poste;
+                        existant.groupe = j.groupe;
+                        existant.actif = j.actif;
+                        joueursMisAJour++;
+                    } else {
+                        // Ajout
+                        const { data, error } = await window.AppCore.supabaseClient
+                            .from(tableName)
+                            .insert([{ nom: j.nom, niveau: j.niveau, poste: j.poste, groupe: j.groupe, actif: j.actif }])
+                            .select()
+                            .single();
+                        if (error) throw error;
+                        window.AppCore.joueurs.push({ ...j, id: data.id });
+                        joueursAjoutés++;
+                    }
+                } catch (err) {
+                    console.error('Erreur import joueur:', j.nom, err);
+                }
+            }
+
+            // === IMPORT SESSIONS ===
+            const { data: existantes } = await window.AppCore.supabaseClient
+                .from('sessions')
+                .select('date_session, nb_equipes')
+                .eq('club_id', window.AppCore.clubActuel.id);
+
+            const existSet = new Set((existantes || []).map(s => `${s.date_session}_${s.nb_equipes}`));
+
+            let sessionsImportées = 0;
+            let sessionsIgnorées = 0;
+
+            for (const sessionData of (importData.sessions || [])) {
+                const cleDedoublon = `${sessionData.date_session}_${sessionData.nb_equipes}`;
+                if (existSet.has(cleDedoublon)) {
+                    sessionsIgnorées++;
+                    continue;
+                }
+
+                const { data: session, error: errSession } = await window.AppCore.supabaseClient
+                    .from('sessions')
+                    .insert([{
+                        club_id: window.AppCore.clubActuel.id,
+                        date_session: sessionData.date_session,
+                        nb_equipes: sessionData.nb_equipes,
+                        resultats_saisis: sessionData.resultats_saisis || false,
+                        ajustements_appliques: sessionData.ajustements_appliques || false
+                    }])
+                    .select()
+                    .single();
+
+                if (errSession) { console.error('Erreur import session:', errSession); continue; }
+
+                const teamNumToId = {};
+
+                for (const teamData of (sessionData.teams || [])) {
+                    const { data: team, error: errTeam } = await window.AppCore.supabaseClient
+                        .from('session_teams')
+                        .insert([{
+                            session_id: session.id,
+                            numero_equipe: teamData.numero_equipe,
+                            niveau_total: teamData.niveau_total || 0
+                        }])
+                        .select()
+                        .single();
+
+                    if (errTeam) { console.error('Erreur import team:', errTeam); continue; }
+                    teamNumToId[teamData.numero_equipe] = team.id;
+
+                    if (teamData.players && teamData.players.length > 0) {
+                        await window.AppCore.supabaseClient
+                            .from('session_players')
+                            .insert(teamData.players.map(p => ({
+                                session_team_id: team.id,
+                                player_id: null,
+                                player_name: p.player_name,
+                                niveau: p.niveau,
+                                poste: p.poste
+                            })));
+                    }
+                }
+
+                for (const result of (sessionData.results || [])) {
+                    const eq1Id = teamNumToId[result.equipe1];
+                    const eq2Id = teamNumToId[result.equipe2];
+                    const gagnantId = result.gagnant ? teamNumToId[result.gagnant] : null;
+                    if (eq1Id && eq2Id) {
+                        await window.AppCore.supabaseClient
+                            .from('match_results')
+                            .insert([{
+                                session_id: session.id,
+                                equipe1_id: eq1Id,
+                                equipe2_id: eq2Id,
+                                gagnant_id: gagnantId
+                            }]);
+                    }
+                }
+
+                sessionsImportées++;
+            }
+
+            document.getElementById('fichierTout').value = '';
+
+            if (window.afficherJoueurs) window.afficherJoueurs();
+            await chargerHistorique();
+
+            let msg = `Joueurs : ${joueursAjoutés} ajouté(s), ${joueursMisAJour} mis à jour`;
+            if (sessionsImportées > 0) msg += ` | Soirées : ${sessionsImportées} importée(s)`;
+            if (sessionsIgnorées > 0) msg += `, ${sessionsIgnorées} ignorée(s)`;
+            window.AppCore.showToast(msg);
+
+        } catch (err) {
+            console.error('Erreur import complet:', err);
+            window.AppCore.showToast('Erreur import : ' + err.message, true);
+        }
+    };
+    reader.readAsText(fichier, 'utf-8');
+}
+
 // === EXPORTER TOUT ===
 async function exporterTout() {
     try {
@@ -1463,5 +1634,6 @@ window.AppSessions = {
     renoterResultats,
     sauvegarderRenotation,
     _calculerDeltaMatch,
-    exporterTout
+    exporterTout,
+    importerTout
 };

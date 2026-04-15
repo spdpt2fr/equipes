@@ -453,6 +453,15 @@ function attachEventListeners() {
         });
     }
 
+    const fichierTout = document.getElementById('fichierTout');
+    if (fichierTout) {
+        fichierTout.addEventListener('change', function() {
+            if (window.AppSessions && window.AppSessions.importerTout) {
+                window.AppSessions.importerTout();
+            }
+        });
+    }
+
     appliquerPermissionsUI();
     console.log('Tous les event listeners attaches avec succes');
 }
