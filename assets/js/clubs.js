@@ -64,11 +64,17 @@ async function init() {
 
         window.AppCore.isOnline = true;
 
+        // Sélectionneur : forcer le score compétitif
+        if (!window.AppCore.isAdmin()) {
+            window.AppCore.methodeConstitution = 'scoreCompetitif';
+        }
+
         if (window.AppUI && window.AppUI.appliquerPermissionsUI) {
             window.AppUI.appliquerPermissionsUI();
         }
 
-        const roleTag = window.AppCore.currentRole === 'admin' ? 'admin' : 'operateur';
+        const roleTag = window.AppCore.currentRole === 'admin' ? 'admin'
+            : (window.AppCore.currentRole === 'selecteur' ? 'selecteur' : 'operateur');
         window.AppCore.updateStatus(`Connecte (${window.AppCore.joueurs.length} joueurs - ${window.AppCore.clubActuel.nom} - ${roleTag})`, 'connected');
         console.log('Connexion OK, joueurs charges:', window.AppCore.joueurs.length);
 

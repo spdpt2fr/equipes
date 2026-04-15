@@ -22,6 +22,11 @@ let sessionValidee = null;
 let historiqueSessions = [];
 let currentUser = null;
 let currentRole = 'admin'; // Compatibilite legacy tant que l'auth n'est pas activee
+
+// Lecture du mode URL (vue sélectionneur)
+const _urlMode = new URLSearchParams(window.location.search).get('mode');
+if (_urlMode === 'selecteur') currentRole = 'selecteur';
+
 let levelSecurityEnforced = false;
 let propositionOriginale = null;
 let historiquePropositions = [];
@@ -52,6 +57,10 @@ function showToast(message, isError = false) {
 
 function isAdmin() {
     return window.AppCore.currentRole === 'admin';
+}
+
+function isSelecteur() {
+    return window.AppCore.currentRole === 'selecteur';
 }
 
 function canViewNiveaux() {
@@ -106,6 +115,7 @@ window.AppCore = {
     updateStatus,
     showToast,
     isAdmin,
+    isSelecteur,
     canViewNiveaux,
     canEditNiveaux,
     getClubSlug,

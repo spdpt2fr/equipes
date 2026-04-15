@@ -21,6 +21,12 @@ function getTableName() {
 }
 
 async function chargerProfilUtilisateur() {
+    // Vue sélectionneur : préserver le rôle URL, pas de profil auth
+    if (window.AppCore.currentRole === 'selecteur') {
+        window.AppCore.currentUser = null;
+        return { role: 'selecteur', user: null };
+    }
+
     try {
         if (!window.AppCore.supabaseClient || !window.AppCore.supabaseClient.auth) {
             window.AppCore.currentUser = null;

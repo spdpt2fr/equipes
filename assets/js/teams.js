@@ -232,7 +232,7 @@ function afficherEquipes() {
         const color = teamColors[idx % teamColors.length];
 
         html += `
-            <div class="team-card">
+            <div class="team-card" data-equipe="${idx}">
                 <div class="team-title" style="color: ${color}">
                     <span class="material-icons">group</span>
                     Equipe ${idx + 1}
@@ -249,7 +249,7 @@ function afficherEquipes() {
 
         joueursAffiches.forEach(j => {
             html += `
-                <li class="team-player" onclick="window.AppTeams.changerEquipe(${idx}, ${e.joueurs.indexOf(j)})">
+                <li class="team-player" draggable="${!window.AppCore.sessionValidee}" data-equipe="${idx}" data-joueur="${e.joueurs.indexOf(j)}">
                     <span class="material-icons">person</span>
                     ${window.AppCore.escapeHtml(j.nom)} - ${window.AppCore.escapeHtml(j.poste)}${(canViewNiveaux && window.AppCore.afficherTotal) ? ' (' + j.niveau + ')' : ''}
                 </li>
@@ -329,16 +329,57 @@ function afficherEquipes() {
 
     html += '</div>';
     container.innerHTML = html;
+
+    // Drag & Drop entre équipes
+    if (!window.AppCore.sessionValidee) {
+    container.querySelectorAll('.team-player[draggable]').forEach(el => {
+        el.addEventListener('dragstart', function(ev) {
+            ev.dataTransfer.setData('text/plain', JSON.stringify({
+                equipeIdx: parseInt(this.dataset.equipe),
+                joueurIdx: parseInt(this.dataset.joueur)
+            }));
+            this.classList.add('dragging');
+        });
+        el.addEventListener('dragend', function() {
+            this.classList.remove('dragging');
+            container.querySelectorAll('.team-card').forEach(c => c.classList.remove('drag-over'));
+        });
+    });
+
+    container.querySelectorAll('.team-card').forEach(card => {
+        const cardIdx = parseInt(card.dataset.equipe);
+        card.addEventListener('dragover', function(ev) {
+            ev.preventDefault();
+            this.classList.add('drag-over');
+        });
+        card.addEventListener('dragleave', function() {
+            this.classList.remove('drag-over');
+        });
+        card.addEventListener('drop', function(ev) {
+            ev.preventDefault();
+            this.classList.remove('drag-over');
+            try {
+                const data = JSON.parse(ev.dataTransfer.getData('text/plain'));
+                if (data.equipeIdx !== cardIdx) {
+                    changerEquipe(data.equipeIdx, data.joueurIdx, cardIdx);
+                }
+            } catch(e) { console.error('Drop error:', e); }
+        });
+    });
+    } // fin if (!sessionValidee) pour DnD
 }
 
 // === CHANGER EQUIPE ===
-function changerEquipe(equipeIdx, joueurIdx) {
-    const nouvelleEquipe = prompt('Numero de la nouvelle equipe pour ce joueur (commence a 1) :');
-    const numEquipe = parseInt(nouvelleEquipe, 10) - 1;
+function changerEquipe(equipeIdx, joueurIdx, nouvelleEquipeIdx) {
+    // If called without target (legacy), use prompt
+    if (nouvelleEquipeIdx === undefined) {
+        const input = prompt('Numero de la nouvelle equipe (commence a 1) :');
+        nouvelleEquipeIdx = parseInt(input, 10) - 1;
+    }
 
-    if (numEquipe >= 0 && numEquipe < window.AppCore.equipes.length && numEquipe !== equipeIdx) {
+    if (nouvelleEquipeIdx >= 0 && nouvelleEquipeIdx < window.AppCore.equipes.length && nouvelleEquipeIdx !== equipeIdx) {
         const joueur = window.AppCore.equipes[equipeIdx].joueurs.splice(joueurIdx, 1)[0];
-        window.AppCore.equipes[numEquipe].joueurs.push(joueur);
+        window.AppCore.equipes[nouvelleEquipeIdx].joueurs.push(joueur);
 
         window.AppCore.equipes.forEach(e => {
             e.niveauTotal = e.joueurs.reduce((acc, j) => acc + (j.niveau || 0), 0);

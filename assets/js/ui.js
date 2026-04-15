@@ -91,14 +91,12 @@ function appliquerPermissionsUI() {
 
     const triNiveauBtn = document.querySelector('.tri-btn[data-tri="niveau"]');
     if (triNiveauBtn) {
-        triNiveauBtn.disabled = !canViewNiveaux;
-        triNiveauBtn.style.opacity = canViewNiveaux ? '' : '0.45';
-        triNiveauBtn.title = canViewNiveaux ? '' : 'Tri niveau reserve admin';
+        triNiveauBtn.style.display = canViewNiveaux ? '' : 'none';
     }
 
     const statsTabBtn = document.querySelector('.tab-btn[data-tab="stats"]');
     if (statsTabBtn) {
-        statsTabBtn.style.display = canViewNiveaux ? '' : 'none';
+        statsTabBtn.style.display = (window.AppCore.isAdmin() || window.AppCore.isSelecteur()) ? '' : 'none';
     }
 
     if (!canViewNiveaux && window.AppCore.triJoueurs === 'niveau') {
@@ -110,15 +108,18 @@ function appliquerPermissionsUI() {
 
     const methodeGroup = document.getElementById('methodeConstitutionGroup');
     if (methodeGroup) methodeGroup.style.display = canViewNiveaux ? '' : 'none';
+
+    // Vue sélectionneur : masquer carte ajout joueur
+    const saisieCard = document.getElementById('saisieJoueursCard');
+    if (saisieCard) saisieCard.style.display = window.AppCore.isAdmin() ? '' : 'none';
+
+    // Vue sélectionneur : masquer carte import/export
+    const importExportCard = document.getElementById('importExportCard');
+    if (importExportCard) importExportCard.style.display = window.AppCore.isAdmin() ? '' : 'none';
 }
 
 // === NAVIGATION PAR ONGLETS ===
 function switchTab(tabName) {
-    if (tabName === 'stats' && window.AppCore.canViewNiveaux && !window.AppCore.canViewNiveaux()) {
-        window.AppCore.showToast('Onglet stats reserve admin', true);
-        tabName = 'gestion';
-    }
-
     document.querySelectorAll('.tab-btn').forEach(btn =>
         btn.classList.toggle('active', btn.dataset.tab === tabName));
     document.querySelectorAll('.tab-section').forEach(s =>
@@ -176,35 +177,36 @@ function afficherJoueurs() {
         const nomSafe = window.AppCore.escapeHtml(j.nom);
         const niveauSafe = window.AppCore.escapeHtml(j.niveau);
         const groupeSafe = window.AppCore.escapeHtml(j.groupe || '');
+        const isAdminUser = window.AppCore.isAdmin();
 
-        const niveauFieldHtml = canViewNiveaux
-            ? `<div class="player-field">
+        // Niveau : visible uniquement admin
+        let niveauFieldHtml = '';
+        if (isAdminUser) {
+            niveauFieldHtml = `<div class="player-field">
                     <div class="niveau-wrapper">
                         <span class="niveau-label">Niv.</span>
                         <input type="number" value="${niveauSafe}" min="1" max="10" step="0.1"
                                onchange="window.AppPlayers.modifierJoueur(${originalIndex}, 'niveau', this.value)"
                                placeholder="1-10" title="Niveau de 1 a 10">
                     </div>
-               </div>`
-            : `<div class="player-field">
-                    <div class="niveau-wrapper">
-                        <span class="niveau-label">Niv.</span>
-                        <span class="badge badge-pending">Masque</span>
-                    </div>
                </div>`;
+        }
 
-        playerCard.innerHTML = `
-            <div class="checkbox-wrapper">
-                <input type="checkbox" ${j.actif ? 'checked' : ''} onchange="window.AppPlayers.modifierJoueur(${originalIndex}, 'actif', this.checked)">
-            </div>
-            <div class="player-info">
-                <div class="player-field">
+        // Nom : editable input (admin) ou span (selecteur)
+        const nomHtml = isAdminUser
+            ? `<div class="player-field">
                     <input type="text" value="${nomSafe}" class="player-name-input"
                            onchange="window.AppPlayers.modifierJoueur(${originalIndex}, 'nom', this.value)"
                            placeholder="Nom du joueur">
-                </div>
-                ${niveauFieldHtml}
-                <div class="player-field">
+               </div>`
+            : `<div class="player-field">
+                    <span class="player-name-input" style="display:inline-block;padding:4px 0;">${nomSafe}</span>
+               </div>`;
+
+        // Poste : select (admin) ou span (selecteur)
+        const posteLabels = { indifferent:'Indifférent', avant:'Avant', arriere:'Arrière', ailier:'Ailier', centre:'Centre', pivot:'Pivot', arr_centre:'Arr. Centre' };
+        const posteHtml = isAdminUser
+            ? `<div class="player-field">
 <select onchange="window.AppPlayers.modifierJoueur(${originalIndex}, 'poste', this.value)" title="Position du joueur">
     <option value="indifferent" ${j.poste === 'indifferent' ? 'selected' : ''}>Indifferent</option>
     <option value="avant" ${j.poste === 'avant' ? 'selected' : ''}>Avant</option>
@@ -214,16 +216,40 @@ function afficherJoueurs() {
     <option value="pivot" ${j.poste === 'pivot' ? 'selected' : ''}>Pivot</option>
     <option value="arr_centre" ${j.poste === 'arr_centre' ? 'selected' : ''}>Arr. Centre</option>
 </select>
-                </div>
-                <div class="player-field">
+               </div>`
+            : `<div class="player-field">
+                    <span style="display:inline-block;padding:4px 0;font-size:13px;">${window.AppCore.escapeHtml(posteLabels[j.poste] || j.poste)}</span>
+               </div>`;
+
+        // Groupe : input (admin) ou span (selecteur)
+        const groupeHtml = isAdminUser
+            ? `<div class="player-field">
                     <input type="number" value="${groupeSafe}" min="1"
                            onchange="window.AppPlayers.modifierJoueur(${originalIndex}, 'groupe', this.value)"
                            placeholder="Groupe" title="Numero de groupe (optionnel)">
-                </div>
-            </div>
-            <button onclick="window.AppPlayers.supprimerJoueur(${originalIndex})" class="btn btn-danger">
+               </div>`
+            : `<div class="player-field">
+                    <span style="display:inline-block;padding:4px 0;font-size:13px;">${groupeSafe}</span>
+               </div>`;
+
+        // Bouton supprimer : admin uniquement
+        const deleteHtml = isAdminUser
+            ? `<button onclick="window.AppPlayers.supprimerJoueur(${originalIndex})" class="btn btn-danger">
                 <span class="material-icons">delete</span>
-            </button>
+               </button>`
+            : '';
+
+        playerCard.innerHTML = `
+            <div class="checkbox-wrapper">
+                <input type="checkbox" ${j.actif ? 'checked' : ''} onchange="window.AppPlayers.modifierJoueur(${originalIndex}, 'actif', this.checked)">
+            </div>
+            <div class="player-info">
+                ${nomHtml}
+                ${niveauFieldHtml}
+                ${posteHtml}
+                ${groupeHtml}
+            </div>
+            ${deleteHtml}
         `;
 
         liste.appendChild(playerCard);

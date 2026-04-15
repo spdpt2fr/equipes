@@ -643,10 +643,15 @@ function afficherHistorique() {
             `;
         }
 
-        html += `
+        if (window.AppCore.isAdmin()) {
+            html += `
                 <button onclick="window.AppSessions.supprimerSession(${session.id})" class="btn btn-danger-outline btn-sm">
                     <span class="material-icons">delete</span>
                 </button>
+            `;
+        }
+
+        html += `
             </div>
         </div>
         `;
@@ -1197,11 +1202,7 @@ function calculerStats() {
 }
 
 function afficherStats() {
-    if (window.AppCore.canViewNiveaux && !window.AppCore.canViewNiveaux()) {
-        window.AppCore.showToast('Stats reservees admin', true);
-        if (window.AppUI && window.AppUI.switchTab) window.AppUI.switchTab('gestion');
-        return;
-    }
+    const canView = window.AppCore.canViewNiveaux ? window.AppCore.canViewNiveaux() : true;
 
     const container = document.getElementById('statsContainer');
     if (!container) return;
@@ -1230,10 +1231,10 @@ function afficherStats() {
             <h2 class="card-title">
                 <span class="material-icons">bar_chart</span>
                 Statistiques joueurs
-                <button onclick="window.AppSessions.exporterStats()" class="btn btn-secondary" style="margin-left:auto;font-size:13px;padding:6px 14px;">
+                ${canView ? `<button onclick="window.AppSessions.exporterStats()" class="btn btn-secondary" style="margin-left:auto;font-size:13px;padding:6px 14px;">
                     <span class="material-icons" style="font-size:16px;">download</span>
                     Exporter CSV
-                </button>
+                </button>` : ''}
             </h2>
             <div class="stats-table-wrapper">
                 <table class="stats-table">
@@ -1251,38 +1252,53 @@ function afficherStats() {
 
     stats.forEach((s, idx) => {
         const rowClass = '';
-        const historiqueHtml = s.historiqueNiveau.map((h, i) => {
-            // niveau avant = snapshot stocké (niveau au moment de la création des équipes)
-            const niveauAvant = h.niveau;
-            // niveau après = snapshot suivant, ou niveau actuel du joueur pour la dernière entrée
-            const nextEntry = s.historiqueNiveau[i + 1];
-            let niveauApres = null;
-            if (nextEntry) {
-                niveauApres = nextEntry.niveau;
-            } else {
-                // Dernière session : chercher le niveau actuel dans AppCore.joueurs
-                const joueurActuel = (window.AppCore.joueurs || []).find(
-                    j => j.nom.toLowerCase() === s.nom.toLowerCase()
-                );
-                if (joueurActuel) niveauApres = joueurActuel.niveau;
-            }
 
-            const diff = niveauApres !== null ? niveauApres - niveauAvant : null;
-            const arrow = diff === null ? '' : diff > 0 ? ' ⬆️' : diff < 0 ? ' ⬇️' : ' ↔️';
-            const d = new Date(h.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+        let historiqueRowHtml = '';
+        let toggleHtml = '';
+        let rowOnclick = '';
 
-            if (niveauApres !== null && niveauApres !== niveauAvant) {
-                return `<div class="niveau-history-row">${d} : <strong>${niveauAvant}</strong> → <strong>${niveauApres}</strong>${arrow}</div>`;
-            } else if (niveauApres !== null) {
-                return `<div class="niveau-history-row">${d} : <strong>${niveauAvant}</strong> (inchangé)</div>`;
-            } else {
-                return `<div class="niveau-history-row">${d} : <strong>${niveauAvant}</strong></div>`;
-            }
-        }).join('');
+        if (canView) {
+            const historiqueHtml = s.historiqueNiveau.map((h, i) => {
+                const niveauAvant = h.niveau;
+                const nextEntry = s.historiqueNiveau[i + 1];
+                let niveauApres = null;
+                if (nextEntry) {
+                    niveauApres = nextEntry.niveau;
+                } else {
+                    const joueurActuel = (window.AppCore.joueurs || []).find(
+                        j => j.nom.toLowerCase() === s.nom.toLowerCase()
+                    );
+                    if (joueurActuel) niveauApres = joueurActuel.niveau;
+                }
+
+                const diff = niveauApres !== null ? niveauApres - niveauAvant : null;
+                const arrow = diff === null ? '' : diff > 0 ? ' ⬆️' : diff < 0 ? ' ⬇️' : ' ↔️';
+                const d = new Date(h.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+
+                if (niveauApres !== null && niveauApres !== niveauAvant) {
+                    return `<div class="niveau-history-row">${d} : <strong>${niveauAvant}</strong> → <strong>${niveauApres}</strong>${arrow}</div>`;
+                } else if (niveauApres !== null) {
+                    return `<div class="niveau-history-row">${d} : <strong>${niveauAvant}</strong> (inchangé)</div>`;
+                } else {
+                    return `<div class="niveau-history-row">${d} : <strong>${niveauAvant}</strong></div>`;
+                }
+            }).join('');
+
+            toggleHtml = ` <span class="history-toggle" id="htoggle-${idx}">▼</span>`;
+            rowOnclick = ` onclick="window._toggleHistorique(${idx})"`;
+            historiqueRowHtml = `
+                        <tr id="hrow-${idx}" class="history-row" style="display:none">
+                            <td colspan="${statsColumnCount}">
+                                <div class="niveau-history">
+                                    ${historiqueHtml || '<em style="color:#aaa">Aucun snapshot de niveau disponible</em>'}
+                                </div>
+                            </td>
+                        </tr>`;
+        }
 
         html += `
-                        <tr class="stats-row ${rowClass}" onclick="window._toggleHistorique(${idx})">
-                            <td>${window.AppCore.escapeHtml(s.nom)} <span class="history-toggle" id="htoggle-${idx}">▼</span></td>
+                        <tr class="stats-row ${rowClass}"${rowOnclick}${!canView ? ' style="cursor:default"' : ''}>
+                            <td>${window.AppCore.escapeHtml(s.nom)}${toggleHtml}</td>
                             <td><strong>${s.points}</strong></td>
                             <td class="stats-v">${s.victoires}</td>
                             <td class="stats-n">${s.nuls}</td>
@@ -1290,13 +1306,7 @@ function afficherStats() {
                             <td>${s.matchs}</td>
                             <td><strong>${s.pct}%</strong></td>
                         </tr>
-                        <tr id="hrow-${idx}" class="history-row" style="display:none">
-                            <td colspan="${statsColumnCount}">
-                                <div class="niveau-history">
-                                    ${historiqueHtml || '<em style="color:#aaa">Aucun snapshot de niveau disponible</em>'}
-                                </div>
-                            </td>
-                        </tr>
+                        ${historiqueRowHtml}
         `;
     });
 
@@ -1526,6 +1536,11 @@ async function importerTout() {
 // === EXPORTER TOUT ===
 async function exporterTout() {
     try {
+        if (!window.AppCore.isAdmin()) {
+            window.AppCore.showToast('Export reserve admin', true);
+            return;
+        }
+
         if (!window.AppCore.isOnline || !window.AppCore.clubActuel) {
             window.AppCore.showToast('Connexion requise pour exporter', true);
             return;

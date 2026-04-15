@@ -17,6 +17,11 @@ function _safeModeEnabled() {
 
 // === AJOUTER JOUEUR ===
 async function ajouterJoueur() {
+    if (!window.AppCore.isAdmin()) {
+        window.AppCore.showToast('Ajout reserve admin', true);
+        return;
+    }
+
     const nom = (document.getElementById('nom').value || '').trim();
     const canEditNiveaux = _canEditNiveaux();
 
@@ -90,6 +95,11 @@ async function ajouterJoueur() {
 
 // === SUPPRIMER JOUEUR ===
 async function supprimerJoueur(index) {
+    if (!window.AppCore.isAdmin()) {
+        window.AppCore.showToast('Suppression reservee admin', true);
+        return;
+    }
+
     if (!confirm('Supprimer ce joueur ?')) return;
 
     const joueur = window.AppCore.joueurs[index];
@@ -138,6 +148,13 @@ async function modifierJoueur(index, champ, valeur) {
     const joueur = window.AppCore.joueurs[index];
     if (!joueur) {
         window.AppCore.showToast('Joueur introuvable, rechargez la liste', true);
+        if (window.afficherJoueurs) window.afficherJoueurs();
+        return;
+    }
+
+    // Sélectionneur : seul le champ 'actif' est modifiable
+    if (!window.AppCore.isAdmin() && champ !== 'actif') {
+        window.AppCore.showToast('Modification reservee admin', true);
         if (window.afficherJoueurs) window.afficherJoueurs();
         return;
     }

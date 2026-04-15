@@ -684,3 +684,272 @@ Ajouter :
 - **m2 — Valeur `0`** : `groupe === 0` est théoriquement possible en DB (INTEGER). Le truthy check le traite comme "pas de groupe", cohérent avec le reste du code.
 - **m3 — Surface XSS limitée** : les noms sont saisis par l'utilisateur ou importés via CSV. Le risque est réel en contexte multi-utilisateur (Supabase partagé).
 - **Pas de test unitaire ajouté dans ce plan** : les correctifs portent sur de la logique interne de `autreProposition()` difficile à tester unitairement sans mock complet. Envisager un test d'intégration dans une future section.
+
+---
+
+## 13. Score compétitif, optimisation SA et onglet "Comment ça marche"
+
+**Décisions validées** :
+- Deux méthodes de constitution : `scoreCompetitif` (par défaut, recommandé) et `niveauTotal` (ancien comportement)
+- `scoreEquipe()` extrait hors de `afficherEquipes()` → fonction de module, exportée dans `window.AppTeams`
+- Optimisation par recuit simulé (SA, 400 itérations) en post-greedy, uniquement en mode `scoreCompetitif`
+- `autreProposition()` simplifié : remplacement de la validation par moyennes (±0.2) par validation par écart-type (≤ 110% de l'original), tentatives portées à 30
+- Sélecteur de méthode visible admin uniquement, masqué via `appliquerPermissionsUI()`
+- Nouvel onglet "Comment ça marche" accessible à tous, contenu bilingue FR/EN
+- Fonctions privées préfixées `_` : `_ecartTypeScores`, `_optimiserEquipes` — non exportées
+
+### Fichiers à modifier
+
+| Fichier | Nature de la modification |
+|---|---|
+| `assets/js/core.js` | Ajout `methodeConstitution` dans état global + export |
+| `assets/js/teams.js` | Extraction `scoreEquipe`, ajout SA (`_ecartTypeScores`, `_optimiserEquipes`), refactor `creerEquipes` et `autreProposition`, export |
+| `index.html` | Sélecteur radio méthode, 4e onglet, section `#section-algorithme` |
+| `assets/js/ui.js` | Masquage sélecteur non-admin, branchement onglet algorithme, contenu bilingue, exports |
+| `assets/css/components.css` | Styles `.algo-section`, `.algo-block`, `.algo-formula`, `.lang-switch` |
+
+### Tâches
+
+**Étape 0 — `assets/js/core.js`**
+
+- [x] **0.1** Ajouter `let methodeConstitution = 'scoreCompetitif';` dans le bloc de variables globales (après `historiquePropositions`)
+- [x] **0.2** Ajouter `methodeConstitution` dans l'objet `window.AppCore = { … }` (export)
+
+**Étape 1 — `assets/js/teams.js`** *(implémenter 1.1→1.9 en un seul passage pour éviter la dérive de lignes)*
+
+- [x] **1.1** Extraire `scoreEquipe(equipe)` de l'intérieur de `afficherEquipes()` (actuellement lignes ~106-135) vers le module level, après `_signatureEquipes`, avant `creerEquipes()`
+- [x] **1.2** Supprimer la définition locale de `scoreEquipe` à l'intérieur de `afficherEquipes()` — les appels `scoreEquipe(e)` dans `afficherEquipes` utiliseront automatiquement la version module-level
+- [x] **1.3** Ajouter `_ecartTypeScores(equipes)` après `scoreEquipe` — calcule l'écart-type des scores compétitifs (mesure du déséquilibre global)
+- [x] **1.4** Ajouter `_optimiserEquipes(equipes)` après `_ecartTypeScores` — recuit simulé 400 itérations, respecte les groupes, re-résout les postes `indifferent`, recalcule `niveauTotal` et `meilleurNiveau` des équipes swappées
+- [x] **1.5** Dans `creerEquipes()` : remplacer les **deux** `window.AppCore.equipes.sort((a, b) => a.niveauTotal - b.niveauTotal)` (tri groupes ~ligne 59, tri sansGroupe ~ligne 75) par un tri conditionnel : si `methodeConstitution === 'scoreCompetitif'`, trier par `scoreEquipe().score` avec cache `Map` ; sinon conserver `niveauTotal`
+- [x] **1.6** Dans `creerEquipes()` : insérer l'appel `window.AppCore.equipes = _optimiserEquipes(window.AppCore.equipes)` après la distribution sansGroupe et **avant** `propositionOriginale = JSON.parse(...)` (~ligne 87), conditionné sur `methodeConstitution === 'scoreCompetitif'`
+- [x] **1.7** Refactorer `autreProposition()` — remplacer `moyennesOriginales` par `const ecartOriginal = _ecartTypeScores(window.AppCore.propositionOriginale)` (calculé une fois avant la boucle `for tentative`)
+- [x] **1.8** Refactorer `autreProposition()` — dans la boucle de construction des swaps candidats : supprimer les 10 lignes de simulation de moyenne (`totalI`, `totalJ`, `nbI`, `nbJ`, `newTotalI`, `newTotalJ`, `newMoyI`, `newMoyJ`, les deux `if (Math.abs(...) > 0.2) continue`, `deltaMoyenne`). Conserver uniquement les filtres `groupe` et `|niveau diff| ≤ 1`. Supprimer `deltaMoyenne` de `swaps.push(...)` → `swaps.push({ i, j, idxA, idxB })`
+- [x] **1.9** Refactorer `autreProposition()` — remplacer le bloc de validation cumulative par moyennes (7 lignes `moyennesOk`) par : `if (_ecartTypeScores(candidat) > ecartOriginal * 1.1) continue;`
+- [x] **1.10** Refactorer `autreProposition()` — augmenter la boucle de tentatives de 10 à 30
+- [x] **1.11** Ajouter `scoreEquipe` dans l'export `window.AppTeams = { … }` (ne PAS exporter `_ecartTypeScores` ni `_optimiserEquipes`)
+
+**Étape 2 — `index.html`**
+
+- [x] **2.1** Dans la `<div class="form-grid">` de la carte "Composition des Équipes" (après l'input `nombreEquipes`, avant le bouton `creerBtn`) : ajouter le bloc radio `<div class="input-group" id="methodeConstitutionGroup">` avec 2 labels radio (`scoreCompetitif` checked, `niveauTotal`) et `onchange="window.AppCore.methodeConstitution = this.value"`
+- [x] **2.2** Dans `<nav class="tab-bar">` : ajouter `<button class="tab-btn" data-tab="algorithme">ℹ️ Comment ça marche</button>` après le bouton Stats
+- [x] **2.3** Après `<div id="section-stats" class="tab-section">…</div>` et avant la fermeture de `</div>` conteneur : ajouter `<div id="section-algorithme" class="tab-section"><div id="algorithmeContainer"></div></div>`
+
+**Étape 3 — `assets/js/ui.js`**
+
+- [x] **3.1** Dans `appliquerPermissionsUI()` : ajouter à la fin `const methodeGroup = document.getElementById('methodeConstitutionGroup'); if (methodeGroup) methodeGroup.style.display = canViewNiveaux ? '' : 'none';`
+- [x] **3.2** Dans `switchTab(tabName)` : ajouter `if (tabName === 'algorithme') window.AppUI.afficherAlgorithme();` après les blocs `historique` et `stats`
+- [x] **3.3** Ajouter `let _langAlgo = 'fr';` en début de fichier (après commentaires d'en-tête, avant les fonctions)
+- [x] **3.4** Ajouter la fonction `afficherAlgorithme()` avant `attachEventListeners()` — contenu bilingue FR/EN dans un objet `contenus`, génère le HTML dans `#algorithmeContainer`, inclut switch langue FR/EN via checkbox toggle
+- [x] **3.5** Ajouter la fonction `toggleLangAlgo()` juste après `afficherAlgorithme()` — bascule `_langAlgo` et rappelle `afficherAlgorithme()`
+- [x] **3.6** Ajouter `afficherAlgorithme` et `toggleLangAlgo` dans l'export `window.AppUI = { … }`
+
+**Étape 4 — `assets/css/components.css`**
+
+- [x] **4.1** Ajouter en fin de fichier le bloc `/* === ONGLET "COMMENT ÇA MARCHE" === */` avec les styles : `.algo-section`, `.algo-section h3`, `.algo-block`, `.algo-block--alt`, `.algo-formula`
+- [x] **4.2** Ajouter dans le même bloc les styles du switch langue : `.lang-switch`, `.lang-switch input`, `.lang-switch__slider`, `.lang-switch__slider::before`, `.lang-switch input:checked + .lang-switch__slider`, `.lang-switch input:checked + .lang-switch__slider::before`
+
+### Points d'attention
+
+- **Dérive de lignes** : les tâches 1.1→1.11 modifient toutes `teams.js` — les implémenter en un seul passage séquentiel ; ne pas se fier aux numéros de lignes entre deux tâches
+- **Shadowing `scoreEquipe`** : après 1.1 + 1.2, vérifier qu'il ne reste AUCUNE définition locale de `scoreEquipe` dans `afficherEquipes()` ; une définition locale masquerait la version module-level dans cette portée
+- **Compteurs de postes après SA** : `_optimiserEquipes` recalcule `niveauTotal` et `meilleurNiveau` mais PAS les compteurs de postes par équipe (`avant`, `arriere`, etc.). Ce n'est pas bloquant car `afficherEquipes()` lit les postes depuis `joueur.poste` et `autreProposition()` recalcule tous les compteurs en fin de traitement. Toutefois, `changerEquipe()` ne les recalcule pas non plus — incohérence pré-existante, hors périmètre de cette feature
+- **4e onglet sur mobile** : la `tab-bar` passe de 3 à 4 boutons — vérifier visuellement que les labels ne sont pas tronqués sous 400px ; si besoin, raccourcir le texte en `ℹ️ Algo` dans `responsive.css` (hors périmètre, à valider visuellement)
+- **Encodage UTF-8** : les contenus FR/EN dans `afficherAlgorithme()` contiennent des accents et le symbole `Σ` — s'assurer que `ui.js` est bien sauvegardé en UTF-8 (pas ANSI)
+- **Onglet algorithme accessible à tous** : ne PAS ajouter de vérification `canViewNiveaux` dans `switchTab` pour cet onglet — seul le sélecteur de méthode est masqué pour les non-admins
+- **Fichiers hors périmètre** : ne modifier AUCUN fichier dans `.claude/worktrees/` — travailler uniquement dans la racine du workspace
+- **Pas de test unitaire** dans ce plan : `scoreEquipe` étant désormais exporté, un test pourra être ajouté dans une future section `tests/tests.js`
+- **Ordre d'implémentation** : 0 → 1 → 2 → 3 → 4 (les étapes 2-4 sont indépendantes entre elles mais toutes dépendent de l'étape 1 pour la cohérence fonctionnelle)
+
+---
+
+## 14. Vue Sélectionneur (`?mode=selecteur`)
+
+**Décisions validées** :
+- Le mode sélectionneur est activé par le paramètre URL `?mode=selecteur`
+- Le sélectionneur peut toggler actif/inactif sur les joueurs
+- Le drag & drop remplace le `prompt()` pour déplacer des joueurs entre équipes — pour tous les rôles (admin inclus)
+- Le sélectionneur peut re-noter les résultats de matchs (onglet Historique accessible)
+- L'onglet Stats est visible et accessible pour le sélectionneur, mais sans niveaux, historique de niveau, ni export CSV
+- Restriction UI-only : la sécurité n'est pas renforcée côté Supabase (les niveaux restent dans les réponses API)
+- Spec fonctionnelle complète : `docs/selecteur-fonctionnel.md`
+
+### Fichiers à modifier
+
+| Fichier | Nature de la modification |
+|---|---|
+| `assets/js/core.js` | Lecture `?mode=selecteur` → `currentRole`, ajout `isSelecteur()`, export |
+| `assets/js/storage.js` | Early return dans `chargerProfilUtilisateur()` si mode selecteur |
+| `index.html` | Ajout `id` sur les cartes Saisie Joueurs et Import/Export |
+| `assets/js/ui.js` | `appliquerPermissionsUI()` étendu, `switchTab()` modifié, `afficherJoueurs()` mode lecture seule, masquage tri niveau |
+| `assets/js/teams.js` | Drag & drop remplace `prompt()` dans `changerEquipe()` / `afficherEquipes()` |
+| `assets/js/sessions.js` | `afficherStats()` adapté, `afficherHistorique()` adapté, `exporterTout()` gardé |
+| `assets/js/players.js` | Guards `isAdmin()` sur ajout/suppression/modification |
+| `assets/js/clubs.js` | Affichage rôle dans status bar, forçage méthode constitution |
+| `assets/css/components.css` | Styles drag & drop |
+
+### Tâches
+
+**Étape 0 — `assets/js/core.js` (rôle depuis URL)**
+
+- [x] **0.1** Lire `?mode=selecteur` depuis `window.location.search` au top-level (après la déclaration de `currentRole`)
+  - Si `new URLSearchParams(window.location.search).get('mode') === 'selecteur'`, alors `currentRole = 'selecteur'`
+  - Sinon, conserver la valeur par défaut `'admin'`
+  - Placer ce code AVANT l'export `window.AppCore` pour que la valeur soit disponible dès le chargement
+
+- [x] **0.2** Ajouter la fonction `isSelecteur()` après `isAdmin()`
+  - `function isSelecteur() { return window.AppCore.currentRole === 'selecteur'; }`
+
+- [x] **0.3** Ajouter `isSelecteur` dans l'export `window.AppCore = { … }`
+
+**Étape 1 — `assets/js/storage.js` (préservation du rôle URL)**
+
+- [x] **1.1** Dans `chargerProfilUtilisateur()`, ajouter un early return en tout début de fonction (avant le try/catch existant) :
+  ```js
+  if (window.AppCore.currentRole === 'selecteur') {
+      window.AppCore.currentUser = null;
+      return { role: 'selecteur', user: null };
+  }
+  ```
+  - Empêche `chargerProfilUtilisateur()` de réécrire `currentRole` à `'admin'` quand il n'y a pas de session auth
+
+**Étape 2 — `index.html` (IDs sur les cartes)**
+
+- [x] **2.1** Ajouter `id="saisieJoueursCard"` sur le `<div class="card">` qui contient "Saisie des Joueurs" (actuellement ligne ~62)
+  - `<div class="card" id="saisieJoueursCard">`
+
+- [x] **2.2** Ajouter `id="importExportCard"` sur le `<div class="card">` qui contient "Import / Export et Actions" (actuellement ligne ~165)
+  - `<div class="card" id="importExportCard">`
+
+**Étape 3 — `assets/js/ui.js` (permissions UI — partie la plus volumineuse)**
+
+- [x] **3.1** `appliquerPermissionsUI()` : masquer la carte de saisie joueurs si !isAdmin
+  - Ajouter : `const saisieCard = document.getElementById('saisieJoueursCard'); if (saisieCard) saisieCard.style.display = window.AppCore.isAdmin() ? '' : 'none';`
+
+- [x] **3.2** `appliquerPermissionsUI()` : masquer la carte Import/Export entière si !isAdmin
+  - Ajouter : `const importExportCard = document.getElementById('importExportCard'); if (importExportCard) importExportCard.style.display = window.AppCore.isAdmin() ? '' : 'none';`
+  - Le bouton Sync (s'il existe séparément) doit rester visible — vérifier qu'il n'est pas dans cette carte
+
+- [x] **3.3** `appliquerPermissionsUI()` : rendre l'onglet Stats visible pour le sélectionneur
+  - Modifier le bloc `statsTabBtn` existant : remplacer `statsTabBtn.style.display = canViewNiveaux ? '' : 'none'` par une logique qui masque uniquement si le rôle l'exclut explicitement
+  - Le sélectionneur n'a PAS `canViewNiveaux()` mais doit quand même VOIR l'onglet Stats
+  - Condition : `statsTabBtn.style.display = (window.AppCore.isAdmin() || window.AppCore.isSelecteur()) ? '' : 'none'`
+
+- [x] **3.4** `switchTab()` : retirer le bloc en tête de fonction qui bloque l'accès Stats pour non-admin
+  - Supprimer les lignes `if (tabName === 'stats' && window.AppCore.canViewNiveaux && !window.AppCore.canViewNiveaux()) { … tabName = 'gestion'; }`
+  - L'accès Stats est désormais contrôlé par la visibilité du bouton onglet (tâche 3.3), pas par un guard dans switchTab
+
+- [x] **3.5** `appliquerPermissionsUI()` : masquer entièrement le bouton tri-par-niveau si !canViewNiveaux
+  - Remplacer le bloc `triNiveauBtn` existant qui utilise `disabled` + `opacity` par un simple `display: none` quand `!canViewNiveaux`
+  - Le bouton tri-niveau ne doit pas apparaître du tout (pas de bouton grisé visible)
+
+- [x] **3.6** `afficherJoueurs()` : mode lecture seule pour les champs si !isAdmin
+  - Quand `!window.AppCore.isAdmin()` :
+    - Nom : remplacer `<input type="text">` par un `<span>` contenant le nom (non éditable)
+    - Poste : remplacer `<select>` par un `<span>` affichant le poste en texte (non éditable)
+    - Groupe : remplacer `<input type="number">` par un `<span>` affichant le groupe ou vide (non éditable)
+    - Niveau : ne pas afficher du tout le champ (ni input, ni badge "Masqué") — il est déjà masqué via `canViewNiveaux`, mais confirmer que la section entière disparaît, pas un badge
+    - Bouton delete : ne pas rendre le bouton `<button class="btn btn-danger">` du tout
+    - Checkbox actif : RESTER éditable (le sélectionneur peut toggler actif/inactif)
+
+- [x] **3.7** `afficherJoueurs()` : ajuster le rendu du badge "Masqué" pour le mode sélectionneur
+  - Actuellement, quand `!canViewNiveaux`, le niveau affiche un badge "Masqué" — remplacer par un masquage total (`display:none` ou ne pas générer le HTML du tout)
+  - Le sélectionneur ne doit pas savoir qu'un champ niveau existe
+
+**Étape 4 — `assets/js/teams.js` (Drag & Drop)**
+
+- [x] **4.1** Dans `afficherEquipes()` : ajouter `draggable="true"` sur chaque `<li class="team-player">`
+  - Modifier le template literal : `<li class="team-player" draggable="true" data-equipe="${idx}" data-joueur="${e.joueurs.indexOf(j)}">`
+  - Supprimer le `onclick="window.AppTeams.changerEquipe(…)"` existant sur le `<li>`
+
+- [x] **4.2** Dans `afficherEquipes()` : ajouter un attribut `data-equipe="${idx}"` sur chaque `.team-card`
+  - Modifier le template literal : `<div class="team-card" data-equipe="${idx}">`
+
+- [x] **4.3** Dans `afficherEquipes()` : après `container.innerHTML = html`, attacher les événements drag & drop via delegation ou boucle manuelle
+  - **dragstart** sur chaque `.team-player[draggable]` : `e.dataTransfer.setData('text/plain', JSON.stringify({ equipeIdx, joueurIdx }))`, ajouter classe `.dragging`
+  - **dragend** sur chaque `.team-player[draggable]` : retirer classe `.dragging`
+  - **dragover** sur chaque `.team-card` : `e.preventDefault()`, ajouter classe `.drag-over`
+  - **dragleave** sur chaque `.team-card` : retirer classe `.drag-over`
+  - **drop** sur chaque `.team-card` : `e.preventDefault()`, retirer `.drag-over`, lire source depuis `dataTransfer`, déterminer l'équipe cible via `e.currentTarget.dataset.equipe`, appeler la logique de déplacement existante de `changerEquipe()`
+
+- [x] **4.4** Refactorer `changerEquipe()` : extraire la logique de déplacement dans une sous-fonction ou adapter la signature
+  - Actuellement `changerEquipe(equipeIdx, joueurIdx)` utilise un `prompt()` pour lire la destination
+  - Remplacer le `prompt()` : la fonction reçoit directement `equipeIdx` (source), `joueurIdx`, et le `numEquipe` (cible) depuis le handler `drop`
+  - Nouvelle signature possible : `changerEquipe(equipeIdxSource, joueurIdx, equipeIdxCible)`
+  - Supprimer le `prompt()` et le `parseInt()` associé
+  - Conserver toute la logique existante : splice, push, recalcul `niveauTotal`, invalidation `propositionOriginale`, invalidation `sessionValidee`, appel `afficherEquipes()`
+
+- [x] **4.5** S'assurer que le drag & drop fonctionne pour admin ET sélectionneur (pas de guard `isAdmin()` sur le drop)
+
+**Étape 5 — `assets/js/sessions.js` (Stats et Historique)**
+
+- [x] **5.1** `afficherStats()` : supprimer le guard `canViewNiveaux` en tête de fonction
+  - Retirer le bloc L1199-1204 qui fait `showToast('Stats reservees admin')` et redirige vers `gestion`
+  - L'onglet Stats est désormais accessible au sélectionneur
+
+- [x] **5.2** `afficherStats()` : masquer le bouton "Exporter CSV" quand `!canViewNiveaux`
+  - Conditionner le rendu du bouton export CSV dans le HTML généré : `if (canViewNiveaux) { … bouton Exporter CSV … }`
+  - NB : La variable `canViewNiveaux` existe déjà ou doit être évaluée en tête de `afficherStats()`
+
+- [x] **5.3** `afficherStats()` : masquer le toggle `▼` d'historique de niveau quand `!canViewNiveaux`
+  - Ne pas rendre le `<span class="history-toggle">▼</span>` si `!canViewNiveaux`
+  - Ne pas rendre les lignes `<tr>` d'historique de niveau repliées si `!canViewNiveaux`
+  - Ne pas ajouter le `onclick` de toggle sur les `<tr>` de stats si `!canViewNiveaux`
+  - Les lignes du tableau restent cliquables pour rien (pas de toggle), ou retirer le curseur `pointer`
+
+- [x] **5.4** `afficherHistorique()` : masquer le bouton "Supprimer session" quand `!isAdmin()`
+  - Conditionner le rendu du bouton trash/supprimer dans le HTML généré par `afficherHistorique()`
+  - Le bouton "Modifier résultats" reste visible pour le sélectionneur (décision validée)
+
+- [x] **5.5** `exporterTout()` : ajouter un guard `isAdmin()` en tête de fonction
+  - `if (!window.AppCore.isAdmin()) { window.AppCore.showToast('Export reserve admin', true); return; }`
+  - Défense en profondeur : même si le bouton est masqué, la fonction doit refuser l'exécution
+
+**Étape 6 — `assets/js/players.js` (Guards CRUD)**
+
+- [x] **6.1** `ajouterJoueur()` : ajouter un guard en tête de fonction
+  - `if (!window.AppCore.isAdmin()) { window.AppCore.showToast('Ajout reserve admin', true); return; }`
+
+- [x] **6.2** `supprimerJoueur()` : ajouter un guard en tête de fonction
+  - `if (!window.AppCore.isAdmin()) { window.AppCore.showToast('Suppression reservee admin', true); return; }`
+
+- [x] **6.3** `modifierJoueur()` : ajouter un guard pour les champs autres que `actif`
+  - Avant le code existant (après le check `!joueur`) : `if (!window.AppCore.isAdmin() && champ !== 'actif') { window.AppCore.showToast('Modification reservee admin', true); if (window.afficherJoueurs) window.afficherJoueurs(); return; }`
+  - Le sélectionneur peut modifier uniquement le champ `actif` (toggler actif/inactif)
+
+**Étape 7 — `assets/js/clubs.js` (init et forçage méthode)**
+
+- [x] **7.1** `init()` : afficher le rôle `selecteur` dans la status bar
+  - Modifier le `roleTag` existant : ajouter le cas `'selecteur'`
+  - `const roleTag = window.AppCore.currentRole === 'admin' ? 'admin' : (window.AppCore.currentRole === 'selecteur' ? 'selecteur' : 'operateur');`
+
+- [x] **7.2** `init()` : si `!isAdmin()`, forcer `methodeConstitution = 'scoreCompetitif'`
+  - Après `chargerProfilUtilisateur()` et avant `chargerJoueurs()` : `if (!window.AppCore.isAdmin()) window.AppCore.methodeConstitution = 'scoreCompetitif';`
+  - Le sélectionneur ne voit pas le sélecteur de méthode (masqué en 3.2/appliquerPermissionsUI) mais l'algorithme doit quand même utiliser la bonne méthode
+
+**Étape 8 — `assets/css/components.css` (Drag & Drop)**
+
+- [x] **8.1** Ajouter le style `cursor: grab` pour les éléments draggable
+  - `.team-player[draggable="true"] { cursor: grab; }`
+
+- [x] **8.2** Ajouter le style de l'élément en cours de drag
+  - `.team-player.dragging { opacity: 0.4; background: #e3f2fd; }`
+
+- [x] **8.3** Ajouter le style de la zone de drop
+  - `.team-card.drag-over { border: 2px dashed #1976d2; background: rgba(25, 118, 210, 0.05); }`
+
+### Points d'attention
+
+- **Ordre d'exécution critique** : `core.js` lit `?mode=selecteur` au top-level et fixe `currentRole` AVANT que `storage.js` ne soit chargé. Puis `chargerProfilUtilisateur()` dans `init()` est court-circuité par le early return (tâche 1.1). Si le early return est manqué, le rôle sera écrasé à `'admin'` (car pas de session auth → fallback admin dans `chargerProfilUtilisateur`).
+- **Sécurité UI-only** : les niveaux sont toujours retournés par l'API Supabase (RLS ouvert). Un utilisateur technique peut lire les niveaux via DevTools/Network. La spec accepte cette limitation. Pour une vraie sécurité, il faudrait une colonne-level RLS ou des vues PostgreSQL filtrées — hors périmètre.
+- **Drag & drop mobile** : les événements `dragstart`/`dragover`/`drop` ne fonctionnent PAS nativement sur les appareils tactiles (iOS, Android). Un polyfill touch → drag (ex: `mobile-drag-drop` ou listeners `touchstart`/`touchmove`/`touchend` custom) sera nécessaire dans un futur plan. À défaut, le sélectionneur sur mobile ne pourra pas déplacer de joueurs entre équipes.
+- **Admin aussi en drag & drop** : le plan remplace `prompt()` par DnD pour tous les rôles. L'admin perd la possibilité de taper un numéro d'équipe. Vérifier que ce n'est pas une régression UX (équipes nombreuses → DnD peut être plus long que prompt).
+- **Badge "Masqué" vs masquage total** : actuellement `!canViewNiveaux` affiche un badge "Masqué" dans la player card. La spec demande que le sélectionneur ne sache même pas qu'un champ niveau existe → masquer toute la zone (tâches 3.6 et 3.7). Ce changement impacte aussi le layout vertical de la player card si le champ niveau occupait de la place.
+- **`afficherStats()` dual-mode** : la garde actuelle redirige vers gestion si `!canViewNiveaux`. La supprimer (tâche 5.1) permet au sélectionneur d'accéder aux stats. Mais `calculerStats()` utilise `session_players.niveau` pour `historiqueNiveau` — ces données sont dans la réponse API. Côté rendu, s'assurer que `afficherStats()` n'injecte aucune valeur numérique de niveau dans le DOM quand `!canViewNiveaux`.
+- **Historique de niveau dans Stats** : `calculerStats()` construit `historiqueNiveau[]` pour chaque joueur. Quand `!canViewNiveaux`, `afficherStats()` ne doit pas rendre les lignes d'historique (tâche 5.3) ni le toggle `▼`. Toutefois, `calculerStats()` continue de calculer ces données — c'est acceptable car elles ne transitent pas vers le DOM.
+- **Cohérence tri-niveau masqué** : la tâche 3.5 masque le bouton tri-niveau en `display:none` au lieu de le griser. Cela change le layout du `.tri-toggle` (un seul bouton visible au lieu de deux). Vérifier visuellement que le bouton "A → Z" seul n'a pas un rendu bizarre (il occupe potentiellement toute la largeur).
+- **`changerEquipe()` signature breaking** : la tâche 4.4 change la signature de `changerEquipe()`. Si un autre fichier appelle `changerEquipe(equipeIdx, joueurIdx)` avec 2 args, il faudra le mettre à jour. Vérifier qu'aucun autre caller n'existe (grep confirmé : seul `teams.js` l'appelle via onclick inline, qui est supprimé en 4.1).
+- **Export `window.AppTeams`** : aucun nouvel export n'est nécessaire — `changerEquipe` est déjà exporté, sa signature change mais le nom reste.
+- **Tests** : aucun test unitaire dans ce plan. Envisager d'ajouter ultérieurement : test que `isSelecteur()` retourne `true` avec `?mode=selecteur`, test que `modifierJoueur('actif')` fonctionne en mode sélectionneur, test que `modifierJoueur('niveau')` est bloqué.
+- **`methodeConstitution` default** : actuellement `'niveauTotal'` dans `core.js` (ligne 29). Le forçage en 7.2 écrase cette valeur pour le sélectionneur. Le sélecteur HTML dans `index.html` a `niveauTotal` en selected → comme le sélecteur est masqué, pas d'incohérence visuelle.
+- **Import/Export vs Sync** : la tâche 3.2 masque la carte Import/Export entière. Vérifier si le bouton Sync (synchroniser) est dans cette carte ou ailleurs. S'il est dans la carte, il faut soit le sortir de la carte, soit ne masquer que les boutons individuels. Le plan original mentionne "keep only syncBtn" — à vérifier dans le HTML.

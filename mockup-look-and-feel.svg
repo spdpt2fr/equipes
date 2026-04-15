@@ -1,0 +1,351 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1024" viewBox="0 0 1440 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Maquette visuelle premium de l'application de gestion d'equipes</title>
+  <desc id="desc">Vue desktop statique montrant un header, des onglets, le contexte club, un formulaire joueur, une carte de liste et equipes, ainsi qu'une zone de statistiques.</desc>
+  <defs>
+    <linearGradient id="bgGradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#eef5fb"/>
+      <stop offset="60%" stop-color="#e5eff8"/>
+      <stop offset="100%" stop-color="#d8e6f1"/>
+    </linearGradient>
+    <linearGradient id="heroGradient" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0a3a5a"/>
+      <stop offset="55%" stop-color="#0f5f8c"/>
+      <stop offset="100%" stop-color="#1782b8"/>
+    </linearGradient>
+    <linearGradient id="panelGlow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.88"/>
+      <stop offset="100%" stop-color="#f8fbfd" stop-opacity="0.98"/>
+    </linearGradient>
+    <linearGradient id="accentLine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#36b0e3"/>
+      <stop offset="100%" stop-color="#1e6f9c"/>
+    </linearGradient>
+    <filter id="shadowSoft" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#0d3856" flood-opacity="0.12"/>
+    </filter>
+    <filter id="shadowStrong" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="22" stdDeviation="28" flood-color="#08273d" flood-opacity="0.18"/>
+    </filter>
+    <pattern id="gridPattern" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#ffffff" stroke-opacity="0.12" stroke-width="1"/>
+    </pattern>
+    <style>
+      text {
+        font-family: Aptos, "Segoe UI", Roboto, sans-serif;
+        fill: #12344b;
+      }
+      .eyebrow {
+        font-size: 13px;
+        letter-spacing: 1.6px;
+        text-transform: uppercase;
+        fill: #7cc7e4;
+        font-weight: 700;
+      }
+      .hero-title {
+        font-size: 34px;
+        font-weight: 700;
+        fill: #ffffff;
+      }
+      .hero-subtitle {
+        font-size: 15px;
+        fill: #d7ebf7;
+      }
+      .metric-label {
+        font-size: 12px;
+        fill: #97b7cb;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+      }
+      .metric-value {
+        font-size: 22px;
+        fill: #ffffff;
+        font-weight: 700;
+      }
+      .section-title {
+        font-size: 20px;
+        font-weight: 700;
+        fill: #15384f;
+      }
+      .section-subtitle {
+        font-size: 13px;
+        fill: #6d8797;
+      }
+      .card-title {
+        font-size: 17px;
+        font-weight: 700;
+        fill: #173a52;
+      }
+      .card-caption {
+        font-size: 12px;
+        fill: #7a90a1;
+      }
+      .label {
+        font-size: 12px;
+        fill: #6c8496;
+        font-weight: 600;
+      }
+      .value {
+        font-size: 14px;
+        fill: #18394f;
+        font-weight: 600;
+      }
+      .tab-text {
+        font-size: 14px;
+        font-weight: 700;
+      }
+      .small {
+        font-size: 11px;
+        fill: #7b92a2;
+      }
+      .table-head {
+        font-size: 12px;
+        fill: #5f7b90;
+        font-weight: 700;
+      }
+      .table-cell {
+        font-size: 13px;
+        fill: #1c4159;
+      }
+      .num-strong {
+        font-size: 13px;
+        font-weight: 700;
+      }
+    </style>
+  </defs>
+
+  <rect width="1440" height="1024" fill="url(#bgGradient)"/>
+  <circle cx="1270" cy="120" r="240" fill="#8ac5df" fill-opacity="0.12"/>
+  <circle cx="180" cy="900" r="280" fill="#0f6f9d" fill-opacity="0.08"/>
+  <rect x="64" y="52" width="1312" height="920" rx="34" fill="#f3f8fb" fill-opacity="0.78"/>
+
+  <g filter="url(#shadowStrong)">
+    <rect x="96" y="72" width="1248" height="880" rx="30" fill="#f9fcfe"/>
+  </g>
+
+  <g>
+    <rect x="120" y="96" width="1200" height="168" rx="28" fill="url(#heroGradient)"/>
+    <rect x="120" y="96" width="1200" height="168" rx="28" fill="url(#gridPattern)" opacity="0.9"/>
+    <circle cx="1160" cy="142" r="54" fill="#ffffff" fill-opacity="0.09"/>
+    <circle cx="1224" cy="192" r="76" fill="#ffffff" fill-opacity="0.07"/>
+    <path d="M1084 214 C1120 182, 1174 170, 1236 184" fill="none" stroke="#9fddf3" stroke-width="2" stroke-opacity="0.5"/>
+    <text x="156" y="136" class="eyebrow">Gestion d'effectif et soirée sportive</text>
+    <text x="156" y="182" class="hero-title">Gestionnaire d'equipes · Hockey subaquatique</text>
+    <text x="156" y="212" class="hero-subtitle">Vision plus lisible, contexte club centralise, pilotage des soirees et lecture immediate des equilibres.</text>
+
+    <g transform="translate(856 126)">
+      <rect width="132" height="84" rx="18" fill="#ffffff" fill-opacity="0.1" stroke="#ffffff" stroke-opacity="0.18"/>
+      <text x="22" y="28" class="metric-label">Club actif</text>
+      <text x="22" y="58" class="metric-value">Grenoble</text>
+      <text x="22" y="75" class="small" fill="#d6edf7">31 joueurs synchronises</text>
+    </g>
+    <g transform="translate(1008 126)">
+      <rect width="132" height="84" rx="18" fill="#ffffff" fill-opacity="0.1" stroke="#ffffff" stroke-opacity="0.18"/>
+      <text x="22" y="28" class="metric-label">Equipes</text>
+      <text x="22" y="58" class="metric-value">4</text>
+      <text x="22" y="75" class="small" fill="#d6edf7">Equilibrage Elo simplifie</text>
+    </g>
+    <g transform="translate(1160 126)">
+      <rect width="132" height="84" rx="18" fill="#ffffff" fill-opacity="0.1" stroke="#ffffff" stroke-opacity="0.18"/>
+      <text x="22" y="28" class="metric-label">Session</text>
+      <text x="22" y="58" class="metric-value">Ce soir</text>
+      <text x="22" y="75" class="small" fill="#d6edf7">Etat pret a valider</text>
+    </g>
+  </g>
+
+  <g filter="url(#shadowSoft)">
+    <rect x="120" y="288" width="1200" height="56" rx="18" fill="#ffffff"/>
+  </g>
+  <g>
+    <rect x="140" y="299" width="170" height="34" rx="12" fill="#0f5f8c"/>
+    <text x="225" y="321" class="tab-text" text-anchor="middle" fill="#ffffff">Gestion</text>
+
+    <rect x="320" y="299" width="170" height="34" rx="12" fill="#eef4f8"/>
+    <text x="405" y="321" class="tab-text" text-anchor="middle" fill="#587589">Historique</text>
+
+    <rect x="500" y="299" width="170" height="34" rx="12" fill="#eef4f8"/>
+    <text x="585" y="321" class="tab-text" text-anchor="middle" fill="#587589">Statistiques</text>
+
+    <rect x="964" y="299" width="160" height="34" rx="12" fill="#f3f8fb" stroke="#d3e0e9"/>
+    <text x="982" y="321" class="small">Derniere sync</text>
+    <text x="1112" y="321" class="value" text-anchor="end">il y a 2 min</text>
+
+    <rect x="1140" y="299" width="160" height="34" rx="12" fill="#e8f5fb" stroke="#c6dfeb"/>
+    <circle cx="1164" cy="316" r="6" fill="#19a26b"/>
+    <text x="1180" y="321" class="value">Supabase en ligne</text>
+  </g>
+
+  <text x="124" y="386" class="section-title">Organisation de la soiree</text>
+  <text x="124" y="408" class="section-subtitle">Une structure plus sobre, avec des cartes metier bien separees et des indicateurs utiles a la decision.</text>
+
+  <g filter="url(#shadowSoft)">
+    <rect x="120" y="436" width="376" height="476" rx="26" fill="url(#panelGlow)"/>
+    <rect x="520" y="436" width="456" height="476" rx="26" fill="url(#panelGlow)"/>
+    <rect x="996" y="436" width="324" height="476" rx="26" fill="url(#panelGlow)"/>
+  </g>
+
+  <g>
+    <rect x="120" y="436" width="376" height="8" rx="4" fill="url(#accentLine)"/>
+    <text x="148" y="478" class="card-title">Contexte club et saisie joueurs</text>
+    <text x="148" y="500" class="card-caption">Point d'entree unique pour le club, le roster et les actions rapides.</text>
+
+    <rect x="148" y="528" width="320" height="84" rx="18" fill="#0d466a"/>
+    <text x="172" y="554" class="metric-label">Club actuel</text>
+    <text x="172" y="584" class="metric-value">Grenoble · France</text>
+    <text x="172" y="602" class="small" fill="#d7ebf7">31 actifs · 4 groupes · priorite competition</text>
+    <rect x="364" y="544" width="80" height="28" rx="14" fill="#ffffff" fill-opacity="0.12" stroke="#ffffff" stroke-opacity="0.18"/>
+    <text x="404" y="562" class="small" text-anchor="middle" fill="#eff8fd">Changer</text>
+
+    <text x="148" y="650" class="label">Nom du joueur</text>
+    <rect x="148" y="664" width="320" height="44" rx="14" fill="#f6fafc" stroke="#d7e4ec"/>
+    <text x="166" y="691" class="value" fill="#90a2af">Ex. Martin Rousset</text>
+
+    <text x="148" y="738" class="label">Niveau</text>
+    <rect x="148" y="752" width="96" height="44" rx="14" fill="#f6fafc" stroke="#d7e4ec"/>
+    <text x="166" y="779" class="value">6.8</text>
+
+    <text x="260" y="738" class="label">Poste</text>
+    <rect x="260" y="752" width="116" height="44" rx="14" fill="#f6fafc" stroke="#d7e4ec"/>
+    <text x="278" y="779" class="value">Centre</text>
+
+    <text x="392" y="738" class="label">Groupe</text>
+    <rect x="392" y="752" width="76" height="44" rx="14" fill="#f6fafc" stroke="#d7e4ec"/>
+    <text x="410" y="779" class="value">2</text>
+
+    <rect x="148" y="822" width="320" height="48" rx="16" fill="#1070a0"/>
+    <text x="308" y="852" class="tab-text" text-anchor="middle" fill="#ffffff">Ajouter le joueur</text>
+  </g>
+
+  <g>
+    <rect x="520" y="436" width="456" height="8" rx="4" fill="url(#accentLine)"/>
+    <text x="548" y="478" class="card-title">Liste joueurs et composition des equipes</text>
+    <text x="548" y="500" class="card-caption">Vue operationnelle avec recherche, filtres, charge des equipes et signaux d'equilibre.</text>
+
+    <rect x="548" y="528" width="204" height="42" rx="14" fill="#f6fafc" stroke="#d7e4ec"/>
+    <text x="568" y="554" class="value" fill="#91a2ae">Rechercher un joueur...</text>
+    <rect x="768" y="528" width="88" height="42" rx="14" fill="#eef4f8"/>
+    <text x="812" y="554" class="small" text-anchor="middle">A → Z</text>
+    <rect x="864" y="528" width="84" height="42" rx="14" fill="#0d466a"/>
+    <text x="906" y="554" class="small" text-anchor="middle" fill="#ffffff">Niveau</text>
+
+    <g transform="translate(548 596)">
+      <rect width="192" height="272" rx="18" fill="#f9fbfd" stroke="#dce8ef"/>
+      <text x="20" y="28" class="label">Liste active</text>
+      <text x="172" y="28" class="small" text-anchor="end">31 joueurs</text>
+
+      <g transform="translate(14 46)">
+        <rect width="164" height="42" rx="12" fill="#ffffff" stroke="#dbe7ee"/>
+        <circle cx="18" cy="21" r="7" fill="#0f6f9d"/>
+        <text x="34" y="18" class="value">Martin Rousset</text>
+        <text x="34" y="33" class="small">6.8 · Centre · G2</text>
+        <text x="142" y="25" class="num-strong" text-anchor="end" fill="#0f6f9d">A</text>
+      </g>
+      <g transform="translate(14 96)">
+        <rect width="164" height="42" rx="12" fill="#ffffff" stroke="#dbe7ee"/>
+        <circle cx="18" cy="21" r="7" fill="#177faa"/>
+        <text x="34" y="18" class="value">Lucie Bernard</text>
+        <text x="34" y="33" class="small">6.4 · Avant · G2</text>
+        <text x="142" y="25" class="num-strong" text-anchor="end" fill="#177faa">A</text>
+      </g>
+      <g transform="translate(14 146)">
+        <rect width="164" height="42" rx="12" fill="#ffffff" stroke="#dbe7ee"/>
+        <circle cx="18" cy="21" r="7" fill="#2f95bd"/>
+        <text x="34" y="18" class="value">Pierre Lopez</text>
+        <text x="34" y="33" class="small">5.9 · Arriere</text>
+        <text x="142" y="25" class="num-strong" text-anchor="end" fill="#2f95bd">B</text>
+      </g>
+      <g transform="translate(14 196)">
+        <rect width="164" height="42" rx="12" fill="#ffffff" stroke="#dbe7ee"/>
+        <circle cx="18" cy="21" r="7" fill="#58aecd"/>
+        <text x="34" y="18" class="value">Nora Dumas</text>
+        <text x="34" y="33" class="small">5.6 · Ailier</text>
+        <text x="142" y="25" class="num-strong" text-anchor="end" fill="#58aecd">C</text>
+      </g>
+    </g>
+
+    <g transform="translate(756 596)">
+      <rect width="192" height="126" rx="18" fill="#0d466a"/>
+      <text x="20" y="26" class="metric-label">Equipe A</text>
+      <text x="20" y="54" class="metric-value">39.4</text>
+      <text x="20" y="74" class="small" fill="#d8edf7">6 joueurs · 3 avants · 3 arrieres</text>
+      <rect x="20" y="88" width="152" height="18" rx="9" fill="#ffffff" fill-opacity="0.16"/>
+      <rect x="20" y="88" width="118" height="18" rx="9" fill="#8fd7f0" fill-opacity="0.95"/>
+      <text x="172" y="101" class="small" text-anchor="end" fill="#e6f6fd">Equilibre 82%</text>
+    </g>
+    <g transform="translate(756 742)">
+      <rect width="192" height="126" rx="18" fill="#f7fbfd" stroke="#dbe7ee"/>
+      <text x="20" y="26" class="label">Equipe B</text>
+      <text x="20" y="54" class="section-title" font-size="28">38.9</text>
+      <text x="20" y="74" class="small">6 joueurs · 2 avants · 4 arrieres</text>
+      <rect x="20" y="88" width="152" height="18" rx="9" fill="#e6eff5"/>
+      <rect x="20" y="88" width="112" height="18" rx="9" fill="#1b86b8" fill-opacity="0.82"/>
+      <text x="172" y="101" class="small" text-anchor="end">Equilibre 77%</text>
+    </g>
+  </g>
+
+  <g>
+    <rect x="996" y="436" width="324" height="8" rx="4" fill="url(#accentLine)"/>
+    <text x="1024" y="478" class="card-title">Statistiques et tableau de suivi</text>
+    <text x="1024" y="500" class="card-caption">Bloc de validation pour mesurer la forme, les resultats et la progression des joueurs.</text>
+
+    <rect x="1024" y="528" width="268" height="56" rx="18" fill="#f3f8fb" stroke="#dae6ee"/>
+    <text x="1044" y="550" class="label">Lecture rapide</text>
+    <text x="1044" y="571" class="value">Taux de victoire moyen de la session</text>
+    <text x="1272" y="563" class="section-title" text-anchor="end" font-size="26">58%</text>
+
+    <g transform="translate(1024 612)">
+      <rect width="268" height="236" rx="18" fill="#fbfdfe" stroke="#dce7ee"/>
+      <line x1="0" y1="44" x2="268" y2="44" stroke="#dce7ee"/>
+      <text x="18" y="28" class="table-head">Joueur</text>
+      <text x="128" y="28" class="table-head" text-anchor="middle">V</text>
+      <text x="168" y="28" class="table-head" text-anchor="middle">N</text>
+      <text x="208" y="28" class="table-head" text-anchor="middle">D</text>
+      <text x="246" y="28" class="table-head" text-anchor="end">%V</text>
+
+      <g transform="translate(0 44)">
+        <rect width="268" height="42" fill="#edf7f0"/>
+        <text x="18" y="26" class="table-cell">Lucie Bernard</text>
+        <text x="128" y="26" class="table-cell num-strong" text-anchor="middle" fill="#1e8c58">12</text>
+        <text x="168" y="26" class="table-cell" text-anchor="middle">2</text>
+        <text x="208" y="26" class="table-cell" text-anchor="middle">5</text>
+        <text x="246" y="26" class="table-cell num-strong" text-anchor="end" fill="#1e8c58">63%</text>
+      </g>
+      <g transform="translate(0 86)">
+        <rect width="268" height="42" fill="#ffffff"/>
+        <text x="18" y="26" class="table-cell">Martin Rousset</text>
+        <text x="128" y="26" class="table-cell" text-anchor="middle">10</text>
+        <text x="168" y="26" class="table-cell" text-anchor="middle">3</text>
+        <text x="208" y="26" class="table-cell" text-anchor="middle">6</text>
+        <text x="246" y="26" class="table-cell num-strong" text-anchor="end">53%</text>
+      </g>
+      <g transform="translate(0 128)">
+        <rect width="268" height="42" fill="#ffffff"/>
+        <text x="18" y="26" class="table-cell">Pierre Lopez</text>
+        <text x="128" y="26" class="table-cell" text-anchor="middle">8</text>
+        <text x="168" y="26" class="table-cell" text-anchor="middle">1</text>
+        <text x="208" y="26" class="table-cell" text-anchor="middle">8</text>
+        <text x="246" y="26" class="table-cell num-strong" text-anchor="end">47%</text>
+      </g>
+      <g transform="translate(0 170)">
+        <rect width="268" height="42" fill="#fff1f1"/>
+        <text x="18" y="26" class="table-cell">Nora Dumas</text>
+        <text x="128" y="26" class="table-cell" text-anchor="middle">6</text>
+        <text x="168" y="26" class="table-cell" text-anchor="middle">2</text>
+        <text x="208" y="26" class="table-cell num-strong" text-anchor="middle" fill="#b94d4d">10</text>
+        <text x="246" y="26" class="table-cell num-strong" text-anchor="end" fill="#b94d4d">33%</text>
+      </g>
+    </g>
+
+    <g transform="translate(1024 868)">
+      <rect width="268" height="22" rx="11" fill="#e8eff5"/>
+      <rect width="154" height="22" rx="11" fill="#0f6f9d"/>
+      <text x="12" y="15" class="small" fill="#ffffff">Forme collective</text>
+      <text x="248" y="15" class="small" text-anchor="end">57/100</text>
+    </g>
+  </g>
+
+  <g>
+    <rect x="120" y="930" width="1200" height="2" fill="#dbe7ee"/>
+    <text x="124" y="956" class="small">Maquette statique autonome · direction visuelle premium · palette ocean / neutres / accent sportif</text>
+    <text x="1316" y="956" class="small" text-anchor="end">Desktop 1440 × 1024</text>
+  </g>
+</svg>
