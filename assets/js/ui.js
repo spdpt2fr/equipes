@@ -203,10 +203,8 @@ function afficherJoueurs() {
                     <span class="player-name-input" style="display:inline-block;padding:4px 0;">${nomSafe}</span>
                </div>`;
 
-        // Poste : select (admin) ou span (selecteur)
-        const posteLabels = { indifferent:'Indifférent', avant:'Avant', arriere:'Arrière', ailier:'Ailier', centre:'Centre', pivot:'Pivot', arr_centre:'Arr. Centre' };
-        const posteHtml = isAdminUser
-            ? `<div class="player-field">
+        // Poste : select pour tous (admin et selecteur)
+        const posteHtml = `<div class="player-field">
 <select onchange="window.AppPlayers.modifierJoueur(${originalIndex}, 'poste', this.value)" title="Position du joueur">
     <option value="indifferent" ${j.poste === 'indifferent' ? 'selected' : ''}>Indifferent</option>
     <option value="avant" ${j.poste === 'avant' ? 'selected' : ''}>Avant</option>
@@ -216,20 +214,13 @@ function afficherJoueurs() {
     <option value="pivot" ${j.poste === 'pivot' ? 'selected' : ''}>Pivot</option>
     <option value="arr_centre" ${j.poste === 'arr_centre' ? 'selected' : ''}>Arr. Centre</option>
 </select>
-               </div>`
-            : `<div class="player-field">
-                    <span style="display:inline-block;padding:4px 0;font-size:13px;">${window.AppCore.escapeHtml(posteLabels[j.poste] || j.poste)}</span>
                </div>`;
 
-        // Groupe : input (admin) ou span (selecteur)
-        const groupeHtml = isAdminUser
-            ? `<div class="player-field">
+        // Groupe : input pour tous (admin et selecteur)
+        const groupeHtml = `<div class="player-field">
                     <input type="number" value="${groupeSafe}" min="1"
                            onchange="window.AppPlayers.modifierJoueur(${originalIndex}, 'groupe', this.value)"
                            placeholder="Groupe" title="Numero de groupe (optionnel)">
-               </div>`
-            : `<div class="player-field">
-                    <span style="display:inline-block;padding:4px 0;font-size:13px;">${groupeSafe}</span>
                </div>`;
 
         // Bouton supprimer : admin uniquement

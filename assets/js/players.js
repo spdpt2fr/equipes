@@ -152,8 +152,8 @@ async function modifierJoueur(index, champ, valeur) {
         return;
     }
 
-    // Sélectionneur : seul le champ 'actif' est modifiable
-    if (!window.AppCore.isAdmin() && champ !== 'actif') {
+    // Sélectionneur : seuls actif, poste et groupe sont modifiables
+    if (!window.AppCore.isAdmin() && !['actif', 'poste', 'groupe'].includes(champ)) {
         window.AppCore.showToast('Modification reservee admin', true);
         if (window.afficherJoueurs) window.afficherJoueurs();
         return;

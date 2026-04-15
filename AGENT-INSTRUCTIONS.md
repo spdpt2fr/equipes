@@ -401,8 +401,8 @@ function afficherAlgorithme() {
             titre: 'Comment les équipes sont-elles construites ?',
             s1titre: '1. Choix de la méthode',
             s1score: `<strong>Score compétitif (recommandé)</strong><br>
-                Chaque équipe reçoit un score qui tient compte de la force collective et des meilleurs joueurs :
-                <div class="algo-formula">Score = Σ niveaux × 0,6 + meilleur joueur × 0,25 + 2e meilleur × 0,15</div>
+                Chaque équipe reçoit un score qui tient compte de la force collective et des 4 meilleurs joueurs :
+                <div class="algo-formula">Score = Σ top 6 × 0,15 + 1er joueur × 0,40 + 2e × 0,25 + 3e × 0,13 + 4e × 0,07</div>
                 Une "star" compte davantage qu'un joueur moyen — ce qui reflète mieux la réalité d'un match.
                 Les équipes sont constituées en minimisant l'écart entre ces scores.`,
             s1total: `<strong>Niveau total</strong><br>
@@ -433,8 +433,8 @@ function afficherAlgorithme() {
             titre: 'How are teams built?',
             s1titre: '1. Method selection',
             s1score: `<strong>Competitive score (recommended)</strong><br>
-                Each team receives a score that accounts for both collective strength and top players:
-                <div class="algo-formula">Score = Σ levels × 0.6 + best player × 0.25 + 2nd best × 0.15</div>
+                Each team receives a score that accounts for collective strength and the top 4 players:
+                <div class="algo-formula">Score = Σ top 6 × 0.15 + 1st player × 0.40 + 2nd × 0.25 + 3rd × 0.13 + 4th × 0.07</div>
                 A "star player" carries more weight than an average player — better reflecting match reality.
                 Teams are built by minimising the gap between these scores.`,
             s1total: `<strong>Total level</strong><br>
