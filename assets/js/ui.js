@@ -106,8 +106,8 @@ function appliquerPermissionsUI() {
         );
     }
 
-    const methodeGroup = document.getElementById('methodeConstitutionGroup');
-    if (methodeGroup) methodeGroup.style.display = canViewNiveaux ? '' : 'none';
+    const methodeSelect = document.getElementById('methodeConstitution');
+    if (methodeSelect) methodeSelect.style.display = canViewNiveaux ? '' : 'none';
 
     // Vue sélectionneur : masquer carte ajout joueur
     const saisieCard = document.getElementById('saisieJoueursCard');
