@@ -22,14 +22,14 @@ function scoreEquipe(equipe) {
         const troisieme  = joueursPrisEnCompte[2] ? joueursPrisEnCompte[2].niveau || 0 : 0;
         const quatrieme  = joueursPrisEnCompte[3] ? joueursPrisEnCompte[3].niveau || 0 : 0;
         const total      = joueursPrisEnCompte.reduce((acc, j) => acc + (j.niveau || 0), 0);
-        return { score: total * 0.15 + meilleur * 0.40 + second * 0.25 + troisieme * 0.13 + quatrieme * 0.07, meilleur, second, troisieme, quatrieme, joueursIgnores };
+        return { score: total * 0.30 + meilleur * 0.33 + second * 0.20 + troisieme * 0.11 + quatrieme * 0.06, meilleur, second, troisieme, quatrieme, joueursIgnores };
     }
     const meilleur  = joueursOrdonnes[0] ? joueursOrdonnes[0].niveau || 0 : 0;
     const second    = joueursOrdonnes[1] ? joueursOrdonnes[1].niveau || 0 : 0;
     const troisieme = joueursOrdonnes[2] ? joueursOrdonnes[2].niveau || 0 : 0;
     const quatrieme = joueursOrdonnes[3] ? joueursOrdonnes[3].niveau || 0 : 0;
     const total     = equipe.niveauTotal || 0;
-    return { score: total * 0.15 + meilleur * 0.40 + second * 0.25 + troisieme * 0.13 + quatrieme * 0.07, meilleur, second, troisieme, quatrieme, joueursIgnores: [] };
+    return { score: total * 0.30 + meilleur * 0.33 + second * 0.20 + troisieme * 0.11 + quatrieme * 0.06, meilleur, second, troisieme, quatrieme, joueursIgnores: [] };
 }
 
 // === UTILITAIRES OPTIMISATION ===
@@ -270,11 +270,11 @@ function afficherEquipes() {
     Niveau total : ${(+e.niveauTotal).toFixed(1)} (moy. ${e.joueurs.length > 0 ? (e.niveauTotal / e.joueurs.length).toFixed(1) : '0'})
     &nbsp;|&nbsp; Score compétitif : ${scoresObj[idx].score.toFixed(2)}
     <br><span style="font-size:12px; color:#666;">
-    (Coll.×0.15 : ${(scoresObj[idx].score - scoresObj[idx].meilleur * 0.40 - scoresObj[idx].second * 0.25 - (scoresObj[idx].troisieme || 0) * 0.13 - (scoresObj[idx].quatrieme || 0) * 0.07).toFixed(2)}
-    , 1er×0.40 : ${(scoresObj[idx].meilleur * 0.40).toFixed(2)}
-    , 2e×0.25 : ${(scoresObj[idx].second * 0.25).toFixed(2)}
-    , 3e×0.13 : ${((scoresObj[idx].troisieme || 0) * 0.13).toFixed(2)}
-    , 4e×0.07 : ${((scoresObj[idx].quatrieme || 0) * 0.07).toFixed(2)})
+    (Coll.×0.30 : ${(scoresObj[idx].score - scoresObj[idx].meilleur * 0.33 - scoresObj[idx].second * 0.20 - (scoresObj[idx].troisieme || 0) * 0.11 - (scoresObj[idx].quatrieme || 0) * 0.06).toFixed(2)}
+    , 1er×0.33 : ${(scoresObj[idx].meilleur * 0.33).toFixed(2)}
+    , 2e×0.20 : ${(scoresObj[idx].second * 0.20).toFixed(2)}
+    , 3e×0.11 : ${((scoresObj[idx].troisieme || 0) * 0.11).toFixed(2)}
+    , 4e×0.06 : ${((scoresObj[idx].quatrieme || 0) * 0.06).toFixed(2)})
     </span>`;
 
             if (scoresObj[idx].joueursIgnores.length > 0) {
