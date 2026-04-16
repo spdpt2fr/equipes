@@ -200,11 +200,7 @@
 .lang-switch input:checked + .lang-switch__slider { background: #1976d2; }
 .lang-switch input:checked + .lang-switch__slider::before { transform: translateX(16px); }
 
-/* Drag & Drop entre équipes */
-.team-player[draggable="true"] { cursor: grab; transition: opacity 0.2s; }
-.team-player[draggable="true"]:active { cursor: grabbing; }
-.team-player.dragging { opacity: 0.4; background: #e3f2fd; }
-.team-card.drag-over { border: 2px dashed #1976d2 !important; background: rgba(25, 118, 210, 0.05); }
+
 
 /* === MODALE LOGIN === */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center; }
