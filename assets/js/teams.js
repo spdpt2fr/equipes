@@ -331,9 +331,11 @@ function afficherEquipes() {
     container.innerHTML = html;
 
     // Drag & Drop entre équipes
+    let _isDragging = false;
     if (!window.AppCore.sessionValidee) {
     container.querySelectorAll('.team-player[draggable]').forEach(el => {
         el.addEventListener('dragstart', function(ev) {
+            _isDragging = true;
             ev.dataTransfer.setData('text/plain', JSON.stringify({
                 equipeIdx: parseInt(this.dataset.equipe),
                 joueurIdx: parseInt(this.dataset.joueur)
@@ -343,6 +345,7 @@ function afficherEquipes() {
         el.addEventListener('dragend', function() {
             this.classList.remove('dragging');
             container.querySelectorAll('.team-card').forEach(c => c.classList.remove('drag-over'));
+            setTimeout(() => { _isDragging = false; }, 100);
         });
     });
 
@@ -367,6 +370,17 @@ function afficherEquipes() {
         });
     });
     } // fin if (!sessionValidee) pour DnD
+
+    // Click/tap fallback pour mobile
+    container.querySelectorAll('.team-player').forEach(el => {
+        el.addEventListener('click', function() {
+            if (_isDragging) return;
+            if (window.AppCore.sessionValidee) return;
+            const equipeIdx = parseInt(this.dataset.equipe);
+            const joueurIdx = parseInt(this.dataset.joueur);
+            changerEquipe(equipeIdx, joueurIdx);
+        });
+    });
 }
 
 // === CHANGER EQUIPE ===
