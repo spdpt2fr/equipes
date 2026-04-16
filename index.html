@@ -106,11 +106,20 @@
             <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
                 <input id="nombreEquipes" type="number" placeholder="Nb équipes" min="1" required
                        style="width:90px; padding:8px 10px; border:2px solid #e0e0e0; border-radius:8px; font-size:14px; background:white; outline:none;">
-                <select id="methodeConstitution"
-                        style="padding:8px 12px; border:2px solid #e0e0e0; border-radius:8px; font-size:14px; cursor:pointer; background:white; color:#333;">
-                    <option value="niveauTotal" selected>Niveau total</option>
-                    <option value="scoreCompetitif">Score compétitif</option>
-                </select>
+                <div id="methodeConstitution" class="custom-dropdown" style="position:relative; min-width:160px;">
+                    <div class="custom-dropdown-selected" id="methodeDropdownBtn"
+                         style="padding:8px 12px; border:2px solid #e0e0e0; border-radius:8px; font-size:14px; cursor:pointer; background:white; color:#333; display:flex; justify-content:space-between; align-items:center; user-select:none;">
+                        <span id="methodeDropdownLabel">Niveau total</span>
+                        <span style="font-size:12px; margin-left:8px;">▼</span>
+                    </div>
+                    <div id="methodeDropdownList" class="custom-dropdown-list"
+                         style="display:none; position:absolute; top:100%; left:0; right:0; background:white; border:2px solid #e0e0e0; border-top:none; border-radius:0 0 8px 8px; z-index:1000; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
+                        <div class="custom-dropdown-item custom-dropdown-item-active" data-value="niveauTotal"
+                             style="padding:8px 12px; cursor:pointer; font-size:14px;">Niveau total</div>
+                        <div class="custom-dropdown-item" data-value="scoreCompetitif"
+                             style="padding:8px 12px; cursor:pointer; font-size:14px;">Score compétitif</div>
+                    </div>
+                </div>
                 <button id="creerBtn" class="btn btn-primary">
                     <span class="material-icons">group_add</span>
                     Créer Équipes

@@ -416,10 +416,34 @@ function attachEventListeners() {
         btn.classList.toggle('active', btn.dataset.tri === (window.AppCore.triJoueurs || 'alpha'));
     });
 
-    const methodeSelect = document.getElementById('methodeConstitution');
-    if (methodeSelect) {
-        methodeSelect.addEventListener('change', function() {
-            window.AppCore.methodeConstitution = this.value;
+    // Custom dropdown - méthode de constitution
+    const dropdownBtn = document.getElementById('methodeDropdownBtn');
+    const dropdownList = document.getElementById('methodeDropdownList');
+    const dropdownLabel = document.getElementById('methodeDropdownLabel');
+
+    if (dropdownBtn && dropdownList) {
+        dropdownBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const isOpen = dropdownList.style.display !== 'none';
+            dropdownList.style.display = isOpen ? 'none' : 'block';
+        });
+
+        dropdownList.querySelectorAll('.custom-dropdown-item').forEach(function(item) {
+            item.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const value = this.dataset.value;
+                window.AppCore.methodeConstitution = value;
+                if (dropdownLabel) dropdownLabel.textContent = this.textContent;
+                dropdownList.querySelectorAll('.custom-dropdown-item').forEach(function(el) {
+                    el.classList.toggle('custom-dropdown-item-active', el.dataset.value === value);
+                });
+                dropdownList.style.display = 'none';
+            });
+        });
+
+        // Fermer le dropdown en cliquant ailleurs
+        document.addEventListener('click', function() {
+            dropdownList.style.display = 'none';
         });
     }
 

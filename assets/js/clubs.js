@@ -262,8 +262,8 @@ async function init() {
         if (!window.AppCore.isAdmin()) {
             window.AppCore.methodeConstitution = 'scoreCompetitif';
         }
-        const methodeSelect = document.getElementById('methodeConstitution');
-        if (methodeSelect) methodeSelect.value = window.AppCore.methodeConstitution;
+        const dropdownLabel = document.getElementById('methodeDropdownLabel');
+        if (dropdownLabel) dropdownLabel.textContent = window.AppCore.methodeConstitution === 'scoreCompetitif' ? 'Score compétitif' : 'Niveau total';
 
         if (window.AppUI && window.AppUI.appliquerPermissionsUI) {
             window.AppUI.appliquerPermissionsUI();

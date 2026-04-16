@@ -219,4 +219,8 @@
 .team-player-clickable { cursor: pointer; }
 .team-player-clickable:hover { background: #f0f7ff; border-radius: 6px; }
 
+/* === CUSTOM DROPDOWN === */
+.custom-dropdown-item:hover { background: #e3f2fd; color: #1976d2; }
+.custom-dropdown-item-active { background: #f0f7ff; font-weight: 600; color: #1976d2; }
+
 
