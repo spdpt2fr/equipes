@@ -3,8 +3,9 @@
 /* === FORMULAIRES === */
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; align-items: end; margin-bottom: 16px; }
 .input-group { position: relative; display: flex; flex-direction: column; }
-.input-field { padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; background: white; transition: all 0.3s ease; outline: none; }
+.input-field { padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; background: white; transition: all 0.3s ease; outline: none; width: 100%; box-sizing: border-box; }
 .input-field:focus { border-color: #1976d2; box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1); }
+select.input-field { cursor: pointer; }
 .input-label { position: absolute; left: 16px; top: 12px; font-size: 14px; color: #666; pointer-events: none; transition: all 0.3s ease; background: white; padding: 0 4px; }
 .input-field:focus + .input-label, .input-field:not(:placeholder-shown) + .input-label { top: -8px; font-size: 12px; color: #1976d2; font-weight: 500; }
 
