@@ -248,10 +248,16 @@ function afficherEquipes() {
         }
 
         joueursAffiches.forEach(j => {
+            const equipeIdx2 = idx;
+            const joueurIdx2 = e.joueurs.indexOf(j);
+            const moveBtn = !window.AppCore.sessionValidee
+                ? `<button class="move-player-btn" onclick="window.AppTeams.changerEquipe(${equipeIdx2}, ${joueurIdx2})" title="Déplacer vers une autre équipe">⇄</button>`
+                : '';
             html += `
                 <li class="team-player" draggable="${!window.AppCore.sessionValidee}" data-equipe="${idx}" data-joueur="${e.joueurs.indexOf(j)}">
                     <span class="material-icons">person</span>
                     ${window.AppCore.escapeHtml(j.nom)} - ${window.AppCore.escapeHtml(j.poste)}${(canViewNiveaux && window.AppCore.afficherTotal) ? ' (' + j.niveau + ')' : ''}
+                    ${moveBtn}
                 </li>
             `;
         });
@@ -370,17 +376,6 @@ function afficherEquipes() {
         });
     });
     } // fin if (!sessionValidee) pour DnD
-
-    // Click/tap fallback pour mobile
-    container.querySelectorAll('.team-player').forEach(el => {
-        el.addEventListener('click', function() {
-            if (_isDragging) return;
-            if (window.AppCore.sessionValidee) return;
-            const equipeIdx = parseInt(this.dataset.equipe);
-            const joueurIdx = parseInt(this.dataset.joueur);
-            changerEquipe(equipeIdx, joueurIdx);
-        });
-    });
 }
 
 // === CHANGER EQUIPE ===
