@@ -17,15 +17,19 @@ function scoreEquipe(equipe) {
     if (joueursOrdonnes.length > 6) {
         const joueursPrisEnCompte = joueursOrdonnes.slice(0, 6);
         const joueursIgnores = joueursOrdonnes.slice(6);
-        const meilleur = joueursPrisEnCompte[0] ? joueursPrisEnCompte[0].niveau || 0 : 0;
-        const second   = joueursPrisEnCompte[1] ? joueursPrisEnCompte[1].niveau || 0 : 0;
-        const total    = joueursPrisEnCompte.reduce((acc, j) => acc + (j.niveau || 0), 0);
-        return { score: total * 0.6 + meilleur * 0.25 + second * 0.15, meilleur, second, joueursIgnores };
+        const meilleur   = joueursPrisEnCompte[0] ? joueursPrisEnCompte[0].niveau || 0 : 0;
+        const second     = joueursPrisEnCompte[1] ? joueursPrisEnCompte[1].niveau || 0 : 0;
+        const troisieme  = joueursPrisEnCompte[2] ? joueursPrisEnCompte[2].niveau || 0 : 0;
+        const quatrieme  = joueursPrisEnCompte[3] ? joueursPrisEnCompte[3].niveau || 0 : 0;
+        const total      = joueursPrisEnCompte.reduce((acc, j) => acc + (j.niveau || 0), 0);
+        return { score: total * 0.15 + meilleur * 0.40 + second * 0.25 + troisieme * 0.13 + quatrieme * 0.07, meilleur, second, troisieme, quatrieme, joueursIgnores };
     }
-    const meilleur = joueursOrdonnes[0] ? joueursOrdonnes[0].niveau || 0 : 0;
-    const second   = joueursOrdonnes[1] ? joueursOrdonnes[1].niveau || 0 : 0;
-    const total    = equipe.niveauTotal || 0;
-    return { score: total * 0.6 + meilleur * 0.25 + second * 0.15, meilleur, second, joueursIgnores: [] };
+    const meilleur  = joueursOrdonnes[0] ? joueursOrdonnes[0].niveau || 0 : 0;
+    const second    = joueursOrdonnes[1] ? joueursOrdonnes[1].niveau || 0 : 0;
+    const troisieme = joueursOrdonnes[2] ? joueursOrdonnes[2].niveau || 0 : 0;
+    const quatrieme = joueursOrdonnes[3] ? joueursOrdonnes[3].niveau || 0 : 0;
+    const total     = equipe.niveauTotal || 0;
+    return { score: total * 0.15 + meilleur * 0.40 + second * 0.25 + troisieme * 0.13 + quatrieme * 0.07, meilleur, second, troisieme, quatrieme, joueursIgnores: [] };
 }
 
 // === UTILITAIRES OPTIMISATION ===
@@ -263,16 +267,15 @@ function afficherEquipes() {
 
         if (canViewNiveaux && window.AppCore.afficherTotal) {
             html += `<div class="team-total">
-                Niveau total : ${(+e.niveauTotal).toFixed(1)} (moy. ${e.joueurs.length > 0 ? (e.niveauTotal / e.joueurs.length).toFixed(1) : '0'})
-                &nbsp;|&nbsp; Score compétitif : ${scoresObj[idx].score.toFixed(2)}
-                <br><span style="font-size:12px; color:#666;">
-                (Top6×0.6 : ${(e.joueurs.length > 6
-                    ? [...e.joueurs].sort((a, b) => (b.niveau || 0) - (a.niveau || 0)).slice(0, 6).reduce((acc, j) => acc + (j.niveau || 0), 0)
-                    : e.niveauTotal
-                ).toFixed(1)}
-                , 1er×0.25 : ${(scoresObj[idx].meilleur * 0.25).toFixed(2)}
-                , 2e×0.15 : ${(scoresObj[idx].second * 0.15).toFixed(2)})
-                </span>`;
+    Niveau total : ${(+e.niveauTotal).toFixed(1)} (moy. ${e.joueurs.length > 0 ? (e.niveauTotal / e.joueurs.length).toFixed(1) : '0'})
+    &nbsp;|&nbsp; Score compétitif : ${scoresObj[idx].score.toFixed(2)}
+    <br><span style="font-size:12px; color:#666;">
+    (Coll.×0.15 : ${(scoresObj[idx].score - scoresObj[idx].meilleur * 0.40 - scoresObj[idx].second * 0.25 - (scoresObj[idx].troisieme || 0) * 0.13 - (scoresObj[idx].quatrieme || 0) * 0.07).toFixed(2)}
+    , 1er×0.40 : ${(scoresObj[idx].meilleur * 0.40).toFixed(2)}
+    , 2e×0.25 : ${(scoresObj[idx].second * 0.25).toFixed(2)}
+    , 3e×0.13 : ${((scoresObj[idx].troisieme || 0) * 0.13).toFixed(2)}
+    , 4e×0.07 : ${((scoresObj[idx].quatrieme || 0) * 0.07).toFixed(2)})
+    </span>`;
 
             if (scoresObj[idx].joueursIgnores.length > 0) {
                 html += `<br><span style="color:#d32f2f; font-size:12px;">(Joueur(s) hors top 6 : ${scoresObj[idx].joueursIgnores.map(j => window.AppCore.escapeHtml(j.nom)).join(', ')})</span>`;
