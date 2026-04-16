@@ -108,12 +108,10 @@
                     <input id="nombreEquipes" type="number" class="input-field" placeholder=" " min="1" required>
                     <label class="input-label">Nombre d'équipes</label>
                 </div>
-                <div class="input-group" id="methodeConstitutionGroup">
-                    <select id="methodeConstitution" class="input-field"
-                            onchange="window.AppCore.methodeConstitution = this.value">
-                        <option value="niveauTotal" selected>Niveau total</option>
-                        <option value="scoreCompetitif">Score compétitif</option>
-                    </select>
+                <div id="methodeConstitutionGroup" style="display:flex; align-items:center; gap:8px; white-space:nowrap;">
+                    <span style="font-size:13px; color:#666;">Méthode :</span>
+                    <button id="methodeNiveauTotal" class="btn btn-methode btn-methode-active" onclick="window.AppUI.setMethode('niveauTotal')">Niveau total</button>
+                    <button id="methodeScoreCompetitif" class="btn btn-methode" onclick="window.AppUI.setMethode('scoreCompetitif')">Score compétitif</button>
                 </div>
                 <button id="creerBtn" class="btn btn-primary">
                     <span class="material-icons">group_add</span>

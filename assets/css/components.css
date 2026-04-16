@@ -5,7 +5,6 @@
 .input-group { position: relative; display: flex; flex-direction: column; }
 .input-field { padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; background: white; transition: all 0.3s ease; outline: none; width: 100%; box-sizing: border-box; }
 .input-field:focus { border-color: #1976d2; box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1); }
-select.input-field { cursor: pointer; }
 .input-label { position: absolute; left: 16px; top: 12px; font-size: 14px; color: #666; pointer-events: none; transition: all 0.3s ease; background: white; padding: 0 4px; }
 .input-field:focus + .input-label, .input-field:not(:placeholder-shown) + .input-label { top: -8px; font-size: 12px; color: #1976d2; font-weight: 500; }
 
@@ -219,3 +218,8 @@ select.input-field { cursor: pointer; }
 .team-player { display: flex; align-items: center; gap: 6px; }
 .team-player-clickable { cursor: pointer; }
 .team-player-clickable:hover { background: #f0f7ff; border-radius: 6px; }
+
+/* === TOGGLE MÉTHODE CONSTITUTION === */
+.btn-methode { background: #f0f0f0; color: #555; border: 2px solid #ddd; padding: 6px 12px; font-size: 13px; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-weight: 500; }
+.btn-methode:hover { background: #e0e8f5; border-color: #1976d2; color: #1976d2; }
+.btn-methode-active { background: #1976d2 !important; color: white !important; border-color: #1976d2 !important; }
