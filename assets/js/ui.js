@@ -416,6 +416,13 @@ function attachEventListeners() {
         btn.classList.toggle('active', btn.dataset.tri === (window.AppCore.triJoueurs || 'alpha'));
     });
 
+    const methodeSelect = document.getElementById('methodeConstitution');
+    if (methodeSelect) {
+        methodeSelect.addEventListener('change', function() {
+            window.AppCore.methodeConstitution = this.value;
+        });
+    }
+
     const createTeamsBtn = document.getElementById('creerBtn');
     if (createTeamsBtn) {
         createTeamsBtn.addEventListener('click', function() {

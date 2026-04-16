@@ -262,6 +262,8 @@ async function init() {
         if (!window.AppCore.isAdmin()) {
             window.AppCore.methodeConstitution = 'scoreCompetitif';
         }
+        const methodeSelect = document.getElementById('methodeConstitution');
+        if (methodeSelect) methodeSelect.value = window.AppCore.methodeConstitution;
 
         if (window.AppUI && window.AppUI.appliquerPermissionsUI) {
             window.AppUI.appliquerPermissionsUI();

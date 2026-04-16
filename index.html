@@ -108,10 +108,12 @@
                     <input id="nombreEquipes" type="number" class="input-field" placeholder=" " min="1" required>
                     <label class="input-label">Nombre d'équipes</label>
                 </div>
-                <div id="methodeConstitutionGroup" style="display:flex; align-items:center; gap:8px; white-space:nowrap;">
-                    <span style="font-size:13px; color:#666;">Méthode :</span>
-                    <button id="methodeNiveauTotal" class="btn btn-methode btn-methode-active" onclick="window.AppUI.setMethode('niveauTotal')">Niveau total</button>
-                    <button id="methodeScoreCompetitif" class="btn btn-methode" onclick="window.AppUI.setMethode('scoreCompetitif')">Score compétitif</button>
+                <div id="methodeConstitutionGroup" style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:13px; color:#666; white-space:nowrap;">Méthode :</span>
+                    <select id="methodeConstitution" style="padding:8px 12px; border:2px solid #ddd; border-radius:8px; font-size:14px; cursor:pointer; background:white; color:#333; min-width:160px;">
+                        <option value="niveauTotal" selected>Niveau total</option>
+                        <option value="scoreCompetitif">Score compétitif</option>
+                    </select>
                 </div>
                 <button id="creerBtn" class="btn btn-primary">
                     <span class="material-icons">group_add</span>

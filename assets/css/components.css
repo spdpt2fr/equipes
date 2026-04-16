@@ -219,7 +219,4 @@
 .team-player-clickable { cursor: pointer; }
 .team-player-clickable:hover { background: #f0f7ff; border-radius: 6px; }
 
-/* === TOGGLE MÉTHODE CONSTITUTION === */
-.btn-methode { background: #f0f0f0; color: #555; border: 2px solid #ddd; padding: 6px 12px; font-size: 13px; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-weight: 500; }
-.btn-methode:hover { background: #e0e8f5; border-color: #1976d2; color: #1976d2; }
-.btn-methode-active { background: #1976d2 !important; color: white !important; border-color: #1976d2 !important; }
+
