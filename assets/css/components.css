@@ -214,17 +214,7 @@
 .modal-field .input-field { width: 100%; padding: 10px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; box-sizing: border-box; }
 .modal-field .input-field:focus { border-color: #1976d2; outline: none; box-shadow: 0 0 0 2px rgba(25,118,210,0.2); }
 
-/* Bouton déplacer joueur (mobile-friendly) */
+/* Joueur cliquable pour changer d'équipe */
 .team-player { display: flex; align-items: center; gap: 6px; }
-.move-player-btn {
-    margin-left: auto;
-    background: none;
-    border: 1px solid #bbb;
-    border-radius: 6px;
-    padding: 2px 7px;
-    cursor: pointer;
-    font-size: 14px;
-    color: #555;
-    flex-shrink: 0;
-}
-.move-player-btn:hover { background: #e3f2fd; border-color: #1976d2; color: #1976d2; }
+.team-player-clickable { cursor: pointer; }
+.team-player-clickable:hover { background: #f0f7ff; border-radius: 6px; }

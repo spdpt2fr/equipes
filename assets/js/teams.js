@@ -250,14 +250,11 @@ function afficherEquipes() {
         joueursAffiches.forEach(j => {
             const equipeIdx2 = idx;
             const joueurIdx2 = e.joueurs.indexOf(j);
-            const moveBtn = !window.AppCore.sessionValidee
-                ? `<button class="move-player-btn" onclick="window.AppTeams.changerEquipe(${equipeIdx2}, ${joueurIdx2})" title="Déplacer vers une autre équipe">⇄</button>`
-                : '';
+            const cliquable = !window.AppCore.sessionValidee;
             html += `
-                <li class="team-player">
+                <li class="team-player${cliquable ? ' team-player-clickable' : ''}"${cliquable ? ` onclick="window.AppTeams.changerEquipe(${equipeIdx2}, ${joueurIdx2})"` : ''}>
                     <span class="material-icons">person</span>
                     ${window.AppCore.escapeHtml(j.nom)} - ${window.AppCore.escapeHtml(j.poste)}${(canViewNiveaux && window.AppCore.afficherTotal) ? ' (' + j.niveau + ')' : ''}
-                    ${moveBtn}
                 </li>
             `;
         });
