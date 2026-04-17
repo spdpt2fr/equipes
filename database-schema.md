@@ -93,6 +93,7 @@ CREATE TABLE sessions (
     nb_equipes INTEGER NOT NULL,
     resultats_saisis BOOLEAN DEFAULT false,
     ajustements_appliques BOOLEAN DEFAULT false,
+    statut VARCHAR(20) NOT NULL DEFAULT 'validee',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -171,6 +172,7 @@ CREATE POLICY "Allow all on match_results" ON match_results FOR ALL USING (true)
 | | `nb_equipes` | INTEGER | Nombre d'équipes |
 | | `resultats_saisis` | BOOLEAN | Résultats enregistrés ? |
 | | `ajustements_appliques` | BOOLEAN | Niveaux ajustés ? |
+| | `statut` | VARCHAR(20) | Workflow : `'envoyee'` (sélecteur) ou `'validee'` (admin) — défaut `'validee'` |
 | `session_teams` | `id` | SERIAL | Identifiant unique |
 | | `session_id` | INTEGER | Référence vers sessions |
 | | `numero_equipe` | INTEGER | Numéro de l'équipe (1, 2, 3…) |

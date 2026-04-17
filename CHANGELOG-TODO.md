@@ -1092,3 +1092,165 @@ Ajouter :
 - **Compatibilité §14** : la §14 déplaçait la détection URL dans `core.js` top-level. La §15 la redéplace dans `init()`. Le code inline de la §14 (lignes 27-28 de `core.js`) doit être supprimé (tâche 4.3). Vérifier qu'il n'y a pas de double détection.
 - **`chargerProfilUtilisateur` ne doit plus écraser le rôle** : la tâche 6.1 est critique. Si le fallback `currentRole = 'admin'` subsiste dans le bloc `if (!user)` de `storage.js`, il annulera le rôle `'selecteur'` fixé par la modale (Cancel) ou par l'URL `?mode=selecteur`. Bien supprimer cette ligne.
 - **Pas de test unitaire** dans ce plan : les RPC sont testables uniquement côté Supabase (pas de mock JS). Envisager des tests manuels documentés : login OK, login KO, cancel → sélectionneur, reset flow complet, rate limit, offline fallback.
+
+---
+
+## 16. Envoi sélecteur / validation admin
+
+**Décisions validées** :
+- Le sélecteur peut uniquement « envoyer » une session — sauvegarder les équipes et saisir les résultats de matchs, mais PAS déclencher les ajustements de niveaux
+- L'admin « valide » les sessions envoyées et contrôle l'étape d'ajustement des niveaux
+- Nouvelle colonne `statut` sur la table `sessions` (`'envoyee'` ou `'validee'`, défaut `'validee'`)
+- Les sessions existantes restent en `'validee'` (rétro-compatible)
+- Le bouton d'action en bas des équipes affiche un libellé/icône différent selon le rôle
+- L'historique affiche un badge de statut et des boutons conditionnels par rôle et par statut
+
+### Fichiers à modifier
+
+| Fichier | Nature de la modification |
+|---|---|
+| `database-schema.md` | Documenter la colonne `statut` sur `sessions` |
+| `assets/js/sessions.js` | `validerSession()`, `sauvegarderResultats()`, `validerSessionEnvoyee()` (nouvelle), `afficherHistorique()`, `sauvegarderRenotation()` — logique conditionnelle par rôle/statut |
+| `assets/js/teams.js` | `afficherEquipes()` — libellé et icône du bouton selon le rôle |
+| `assets/css/components.css` | Style `.badge-envoyee` (orange/ambre) pour badge "Envoyée" |
+
+### Tâches
+
+**Étape 0 — Migration SQL + documentation**
+
+- [x] **0.1** Exécuter manuellement sur Supabase :
+  ```sql
+  ALTER TABLE sessions ADD COLUMN statut VARCHAR(20) NOT NULL DEFAULT 'validee';
+  ```
+  Les sessions existantes reçoivent automatiquement `'validee'`.
+
+- [x] **0.2** `database-schema.md` — ajouter la colonne `statut` dans le `CREATE TABLE sessions` et dans le tableau récapitulatif `Structure des tables de sessions`
+  - Type : `VARCHAR(20) NOT NULL DEFAULT 'validee'`
+  - Valeurs possibles : `'envoyee'`, `'validee'`
+  - Description : Statut du workflow — `'envoyee'` = enregistrée par un sélecteur, `'validee'` = confirmée par un admin
+
+**Étape 1 — `assets/js/sessions.js` — `validerSession()`**
+
+- [x] **1.1** Dans l'objet inséré dans `sessions` (le premier `INSERT`), ajouter le champ `statut` :
+  ```js
+  statut: window.AppCore.isAdmin() ? 'validee' : 'envoyee'
+  ```
+  Placer après `nb_equipes`.
+
+- [x] **1.2** Adapter le message `confirm()` selon le rôle :
+  - Admin : `'Valider ces équipes comme soirée de jeu ?'` (texte actuel, inchangé)
+  - Sélecteur : `'Envoyer ces équipes pour validation admin ?'`
+
+- [x] **1.3** Adapter le toast de succès selon le rôle :
+  - Admin : `'✅ Soirée validée et sauvegardée !'` (texte actuel, inchangé)
+  - Sélecteur : `'📤 Soirée envoyée — en attente de validation admin'`
+
+**Étape 2 — `assets/js/sessions.js` — `sauvegarderResultats()`**
+
+- [x] **2.1** Après le toast `'✅ Résultats sauvegardés !'` (ligne ~259), conditionner l'appel `calculerAjustements` + `afficherAjustements` sur `isAdmin()` :
+  ```js
+  if (window.AppCore.isAdmin()) {
+      const ajustements = await calculerAjustements(sessionId);
+      afficherAjustements(sessionId, ajustements);
+  } else {
+      window.AppCore.showToast('Résultats sauvegardés ! L\'admin pourra appliquer les ajustements.');
+  }
+  ```
+  Supprimer les deux lignes actuelles non conditionnées :
+  ```js
+  const ajustements = await calculerAjustements(sessionId);
+  afficherAjustements(sessionId, ajustements);
+  ```
+
+**Étape 3 — `assets/js/sessions.js` — nouvelle fonction `validerSessionEnvoyee(sessionId)`**
+
+- [x] **3.1** Ajouter une nouvelle fonction `async function validerSessionEnvoyee(sessionId)` avant `afficherHistorique()` :
+  - Guard `isAdmin()` : `if (!window.AppCore.isAdmin()) { showToast('Réservé admin', true); return; }`
+  - Guard connexion : `if (!window.AppCore.isOnline) { showToast('Connexion requise', true); return; }`
+  - `confirm('Valider cette session envoyée ?')` — retourner si annulé
+  - UPDATE `sessions` : `{ statut: 'validee' }` WHERE `id = sessionId`
+  - Si erreur → toast + return
+  - Récupérer la session depuis `window.AppCore.historiqueSessions.find(s => s.id === sessionId)`
+  - Si la session a `resultats_saisis === true` et `ajustements_appliques === false` → calculer et afficher les ajustements : `const ajustements = await calculerAjustements(sessionId); afficherAjustements(sessionId, ajustements);`
+  - Toast succès : `'✅ Session validée par l\'admin'`
+  - Recharger l'historique : `await chargerHistorique()`
+
+- [x] **3.2** Ajouter `validerSessionEnvoyee` dans l'export `window.AppSessions = { … }`
+
+**Étape 4 — `assets/js/sessions.js` — `afficherHistorique()`**
+
+- [x] **4.1** Dans le bloc `session-badges`, ajouter un badge de statut entre la date et les badges existants :
+  - Si `session.statut === 'envoyee'` : `<span class="badge badge-envoyee">Envoyée ⏳</span>`
+  - Si `session.statut === 'validee'` : `<span class="badge badge-success">Validée ✓</span>`
+  - Note : les sessions existantes sans `statut` (null/undefined) doivent être traitées comme `'validee'` — utiliser `(session.statut || 'validee')`
+
+- [x] **4.2** Ajouter un bouton "Valider" pour l'admin sur les sessions `envoyee` :
+  - Dans le bloc `session-actions`, avant le premier `if (!session.resultats_saisis)` :
+    ```js
+    if ((session.statut || 'validee') === 'envoyee' && window.AppCore.isAdmin()) {
+        html += `
+            <button onclick="window.AppSessions.validerSessionEnvoyee(${session.id})" class="btn btn-primary btn-sm">
+                <span class="material-icons">check_circle</span>
+                Valider
+            </button>
+        `;
+    }
+    ```
+
+- [x] **4.3** Conditionner le bouton "Appliquer ajustements" pour n'apparaître que sur les sessions `validee` :
+  - Modifier la condition actuelle `} else if (!session.ajustements_appliques && canEditNiveaux) {` en ajoutant le check statut :
+    ```js
+    } else if (!session.ajustements_appliques && canEditNiveaux && (session.statut || 'validee') === 'validee') {
+    ```
+
+- [x] **4.4** Conditionner le bouton "Modifier résultats" (renoterResultats) : bloquer si `statut !== 'validee'` pour le sélecteur
+  - Le sélecteur peut re-noter uniquement les sessions `'validee'`
+  - L'admin peut re-noter toutes les sessions
+  - Modifier la condition existante `if (window.AppCore.isOnline)` :
+    ```js
+    const canRenoter = window.AppCore.isOnline && (window.AppCore.isAdmin() || (session.statut || 'validee') === 'validee');
+    if (canRenoter) {
+    ```
+
+**Étape 5 — `assets/js/sessions.js` — `sauvegarderRenotation()`**
+
+- [x] **5.1** Ajouter un guard de statut en tête de `sauvegarderRenotation(sessionId)` (après le `try {`) :
+  - Récupérer la session : `const session = (window.AppCore.historiqueSessions || []).find(s => s.id === sessionId);`
+  - Si `session && (session.statut || 'validee') !== 'validee' && !window.AppCore.isAdmin()` → toast `'Re-notation réservée aux sessions validées'`, return
+  - L'admin peut re-noter même une session `envoyee` (il la passera en `validee` via le bouton dédié)
+
+**Étape 6 — `assets/js/teams.js` — `afficherEquipes()`**
+
+- [x] **6.1** Modifier le bouton dans le bloc `if (!window.AppCore.sessionValidee)` :
+  - Si `isAdmin()` : libellé = `'Valider cette soirée'`, icône = `check_circle` (comportement actuel)
+  - Si `isSelecteur()` : libellé = `'Envoyer cette soirée'`, icône = `send`
+  - Les deux appellent `window.AppSessions.validerSession()`
+  - Remplacer le HTML statique du bouton par :
+    ```js
+    const isAdmin = window.AppCore.isAdmin();
+    const btnLabel = isAdmin ? 'Valider cette soirée' : 'Envoyer cette soirée';
+    const btnIcon = isAdmin ? 'check_circle' : 'send';
+    ```
+    puis utiliser `${btnIcon}` et `${btnLabel}` dans le template literal
+
+**Étape 7 — `assets/css/components.css` — badge envoyée**
+
+- [x] **7.1** Ajouter le style `.badge-envoyee` après `.badge-pending` (ligne ~60 actuelle) :
+  ```css
+  .badge-envoyee { background: #fff3e0; color: #e65100; }
+  ```
+  Note : la palette est identique à `.badge-pending` ; si une distinction visuelle est souhaitée, utiliser `background: #fff8e1; color: #f57f17;` (ambre plus clair). Décision laissée à l'implémenteur.
+
+### Points d'attention
+
+- **`chargerHistorique()` utilise `SELECT *`** : la nouvelle colonne `statut` sera automatiquement incluse dans les données chargées. Aucune modification de la requête nécessaire.
+- **Rétrocompatibilité** : toujours utiliser `(session.statut || 'validee')` dans le JS pour gérer les sessions créées avant la migration (si `statut` est null/undefined en cache local ou en transit).
+- **`appliquerAjustements()` — guard existant** : la fonction vérifie déjà `canEditNiveaux()` (qui retourne `isAdmin()`). Ce guard reste en place comme défense en profondeur. Pas besoin d'ajouter un check `statut` dans `appliquerAjustements()` car le bouton est déjà masqué côté UI (tâche 4.3).
+- **`recalculerEtAfficherAjustements()`** : cette fonction est appelée par le bouton "Appliquer ajustements" dans l'historique. Elle appelle `calculerAjustements()` puis `afficherAjustements()`. Comme le bouton est conditionné au statut `'validee'` (tâche 4.3), pas de guard supplémentaire nécessaire dans la fonction elle-même.
+- **`validerSession()` insert** : la colonne `statut` avec `DEFAULT 'validee'` en SQL signifie qu'omettre le champ dans l'insert donnerait `'validee'`. La tâche 1.1 le rend explicite côté JS pour que le sélecteur écrive `'envoyee'`. Le DEFAULT SQL sert de filet de sécurité.
+- **Bouton "Saisir résultats"** : le sélecteur qui a envoyé une session doit pouvoir saisir les résultats sans attendre la validation admin. Le bouton "Saisir résultats" existant n'est pas conditionné au `statut` — il reste visible si `!session.resultats_saisis`. C'est le comportement voulu.
+- **Pas de guard `isSelecteur()` dans `sauvegarderResultats()`** : le sélecteur peut sauvegarder les résultats (c'est son rôle). Seul l'appel aux ajustements est bloqué (tâche 2.1).
+- **Pas de test unitaire** dans ce plan : envisager un test vérifiant que `validerSession()` insère `statut: 'envoyee'` quand `currentRole === 'selecteur'`, et un test que `sauvegarderResultats()` n'appelle pas `calculerAjustements` quand `!isAdmin()`.
+- **`validerSessionEnvoyee()` cascade** : cette fonction ne déclenche PAS la cascade de `sauvegarderRenotation()` (pas de recalcul des sessions ultérieures). Elle se contente de promouvoir le statut. Si des résultats sont déjà saisis, elle propose les ajustements.
+- **Pas de modification `core.js`** : `isAdmin()` et `isSelecteur()` existent déjà et suffisent. Aucune nouvelle variable globale nécessaire.
+- **Pas de modification `storage.js`** : la requête `chargerHistorique()` charge déjà tout avec `SELECT *`.

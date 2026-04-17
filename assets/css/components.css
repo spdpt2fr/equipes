@@ -58,6 +58,7 @@
 .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; background: #e0e0e0; color: #555; }
 .badge-success { background: #c8e6c9; color: #2e7d32; }
 .badge-pending { background: #fff3e0; color: #e65100; }
+.badge-envoyee { background: #fff8e1; color: #f57f17; }
 
 /* Result pills */
 .result-pill { display: inline-block; background: #e3f2fd; color: #1565c0; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }

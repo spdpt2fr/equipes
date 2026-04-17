@@ -41,7 +41,10 @@ async function validerSession() {
         return;
     }
 
-    if (!confirm('Valider ces équipes comme soirée de jeu ?')) return;
+    const confirmMsg = window.AppCore.isAdmin()
+        ? 'Valider ces équipes comme soirée de jeu ?'
+        : 'Envoyer ces équipes pour validation admin ?';
+    if (!confirm(confirmMsg)) return;
 
     try {
         // 1. Créer la session
@@ -50,7 +53,8 @@ async function validerSession() {
             .insert([{
                 club_id: window.AppCore.clubActuel.id,
                 date_session: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD en heure locale
-                nb_equipes: window.AppCore.equipes.length
+                nb_equipes: window.AppCore.equipes.length,
+                statut: window.AppCore.isAdmin() ? 'validee' : 'envoyee'
             }])
             .select()
             .single();
@@ -97,7 +101,11 @@ async function validerSession() {
             teamIds: sessionTeamIds
         };
 
-        window.AppCore.showToast('✅ Soirée validée et sauvegardée !');
+        window.AppCore.showToast(
+            window.AppCore.isAdmin()
+                ? '✅ Soirée validée et sauvegardée !'
+                : '📤 Soirée envoyée — en attente de validation admin'
+        );
 
         // Afficher l'interface de résultats
         afficherInterfaceResultats(session.id, sessionTeamIds);
@@ -254,9 +262,13 @@ async function sauvegarderResultats(sessionId) {
 
         window.AppCore.showToast('✅ Résultats sauvegardés !');
 
-        // Calculer et proposer les ajustements
-        const ajustements = await calculerAjustements(sessionId);
-        afficherAjustements(sessionId, ajustements);
+        // Calculer et proposer les ajustements (admin uniquement)
+        if (window.AppCore.isAdmin()) {
+            const ajustements = await calculerAjustements(sessionId);
+            afficherAjustements(sessionId, ajustements);
+        } else {
+            window.AppCore.showToast('Résultats sauvegardés ! L\'admin pourra appliquer les ajustements.');
+        }
 
         // Rafraîchir l'historique
         await chargerHistorique();
@@ -527,6 +539,42 @@ async function chargerHistorique() {
     }
 }
 
+// === VALIDER UNE SESSION ENVOYÉE (admin uniquement) ===
+async function validerSessionEnvoyee(sessionId) {
+    if (!window.AppCore.isAdmin()) {
+        window.AppCore.showToast('Réservé admin', true);
+        return;
+    }
+    if (!window.AppCore.isOnline) {
+        window.AppCore.showToast('Connexion requise', true);
+        return;
+    }
+    if (!confirm('Valider cette session envoyée ?')) return;
+
+    try {
+        const { error } = await window.AppCore.supabaseClient
+            .from('sessions')
+            .update({ statut: 'validee' })
+            .eq('id', sessionId);
+
+        if (error) throw error;
+
+        // Si la session a des résultats mais pas d'ajustements, proposer les ajustements
+        const session = (window.AppCore.historiqueSessions || []).find(s => s.id === sessionId);
+        if (session && session.resultats_saisis && !session.ajustements_appliques) {
+            const ajustements = await calculerAjustements(sessionId);
+            afficherAjustements(sessionId, ajustements);
+        }
+
+        window.AppCore.showToast('✅ Session validée par l\'admin');
+        await chargerHistorique();
+
+    } catch (error) {
+        console.error('Erreur validation session envoyée:', error);
+        window.AppCore.showToast('Erreur: ' + error.message, true);
+    }
+}
+
 // === AFFICHER L'HISTORIQUE ===
 function afficherHistorique() {
     const container = document.getElementById('historiqueContainer');
@@ -560,11 +608,14 @@ function afficherHistorique() {
         const teamMap = {};
         teams.forEach(t => { teamMap[t.id] = t; });
 
+        const sessionStatut = session.statut || 'validee';
+
         html += `
             <div class="session-card">
                 <div class="session-header">
                     <span class="session-date">📅 ${date}</span>
                     <div class="session-badges">
+                        ${sessionStatut === 'envoyee' ? '<span class="badge badge-envoyee">Envoyée ⏳</span>' : '<span class="badge badge-success">Validée ✓</span>'}
                         <span class="badge">${session.nb_equipes} éq.</span>
                         ${session.resultats_saisis ? '<span class="badge badge-success">Résultats ✓</span>' : '<span class="badge badge-pending">En attente</span>'}
                         ${session.ajustements_appliques ? '<span class="badge badge-success">Ajustements ✓</span>' : ''}
@@ -618,6 +669,17 @@ function afficherHistorique() {
 
         // Boutons d'action selon l'état de la session
         html += '<div class="session-actions">';
+
+        // Bouton "Valider" pour admin sur sessions envoyées
+        if (sessionStatut === 'envoyee' && window.AppCore.isAdmin()) {
+            html += `
+                <button onclick="window.AppSessions.validerSessionEnvoyee(${session.id})" class="btn btn-primary btn-sm">
+                    <span class="material-icons">check_circle</span>
+                    Valider
+                </button>
+            `;
+        }
+
         if (!session.resultats_saisis) {
             const teamIds = teams.map(t => t.id);
             html += `
@@ -626,7 +688,7 @@ function afficherHistorique() {
                     Saisir résultats
                 </button>
             `;
-        } else if (!session.ajustements_appliques && canEditNiveaux) {
+        } else if (!session.ajustements_appliques && canEditNiveaux && sessionStatut === 'validee') {
             html += `
                 <button onclick="window.AppSessions.recalculerEtAfficherAjustements(${session.id})" class="btn btn-secondary btn-sm">
                     <span class="material-icons">trending_up</span>
@@ -635,7 +697,8 @@ function afficherHistorique() {
             `;
         }
 
-        if (window.AppCore.isOnline) {
+        const canRenoter = window.AppCore.isOnline && window.AppCore.isAdmin();
+        if (canRenoter) {
             html += `
                 <button onclick="window.AppSessions.renoterResultats(${session.id})" class="btn btn-edit-outline btn-sm" title="Modifier les résultats">
                     <span class="material-icons">edit_note</span>
@@ -1049,8 +1112,19 @@ function renoterResultats(sessionId) {
 
 // === RE-NOTATION : SAUVEGARDER ET CORRIGER ===
 async function sauvegarderRenotation(sessionId) {
+    if (!window.AppCore.isAdmin()) {
+        window.AppCore.showToast('Seul un admin peut re-noter les résultats', 'error');
+        return;
+    }
     try {
         if (!window.AppCore.isOnline) return;
+
+        // Guard : re-notation reservée aux sessions validées (sauf admin)
+        const sessionGuard = (window.AppCore.historiqueSessions || []).find(s => s.id === sessionId);
+        if (sessionGuard && (sessionGuard.statut || 'validee') !== 'validee' && !window.AppCore.isAdmin()) {
+            window.AppCore.showToast('Re-notation réservée aux sessions validées', true);
+            return;
+        }
 
         const supabase = window.AppCore.supabaseClient;
         const container = document.getElementById('resultatsContainer');
@@ -1648,6 +1722,7 @@ window.AppSessions = {
     calculerDeltaSession,
     renoterResultats,
     sauvegarderRenotation,
+    validerSessionEnvoyee,
     _calculerDeltaMatch,
     exporterTout,
     importerTout

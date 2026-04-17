@@ -1,0 +1,5 @@
+[33m52cd151[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m teams: clic sur joueur pour changer equipe, suppression bouton separé
+[33mc2ed383[m teams: supprimer DnD, garder uniquement le bouton clic pour deplacer
+[33ma623ef1[m teams: bouton deplacer joueur pour mobile
+[33mff9f44d[m teams: fallback tap-to-move pour mobile
+[33m213718e[m ui: afficher equipes constituees avant la liste des joueurs

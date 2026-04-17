@@ -309,11 +309,14 @@ function afficherEquipes() {
     }
 
     if (!window.AppCore.sessionValidee) {
+        const isAdmin = window.AppCore.isAdmin();
+        const btnLabel = isAdmin ? 'Valider cette soiree' : 'Envoyer cette soiree';
+        const btnIcon = isAdmin ? 'check_circle' : 'send';
         html += `
             <div class="equipes-actions">
                 <button onclick="window.AppSessions.validerSession()" class="btn btn-primary" style="font-size: 16px; padding: 14px 32px;">
-                    <span class="material-icons">check_circle</span>
-                    Valider cette soiree
+                    <span class="material-icons">${btnIcon}</span>
+                    ${btnLabel}
                 </button>`;
         if (window.AppCore.propositionOriginale) {
             html += `
@@ -326,9 +329,12 @@ function afficherEquipes() {
             </div>
         `;
     } else {
+        const isAdminBadge = window.AppCore.isAdmin();
+        const badgeClass = isAdminBadge ? 'badge-success' : 'badge-warning';
+        const badgeText = isAdminBadge ? 'Soirée validée ✓' : 'Soirée envoyée ⏳';
         html += `
             <div style="text-align: center; margin-top: 20px;">
-                <span class="badge badge-success" style="font-size: 16px; padding: 10px 20px;">Soiree validee</span>
+                <span class="badge ${badgeClass}" style="font-size: 16px; padding: 10px 20px;">${badgeText}</span>
             </div>
         `;
     }
