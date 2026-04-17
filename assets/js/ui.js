@@ -107,7 +107,7 @@ function appliquerPermissionsUI() {
     }
 
     const methodeSelect = document.getElementById('methodeConstitution');
-    if (methodeSelect) methodeSelect.style.display = canViewNiveaux ? '' : 'none';
+    if (methodeSelect) methodeSelect.style.display = '';
 
     // Vue sélectionneur : masquer carte ajout joueur
     const saisieCard = document.getElementById('saisieJoueursCard');

@@ -258,9 +258,9 @@ async function init() {
 
         window.AppCore.isOnline = true;
 
-        // Sélectionneur : forcer le score compétitif
+        // Sélectionneur : défaut Niveau total (peut changer via dropdown)
         if (!window.AppCore.isAdmin()) {
-            window.AppCore.methodeConstitution = 'scoreCompetitif';
+            window.AppCore.methodeConstitution = 'niveauTotal';
         }
         const dropdownLabel = document.getElementById('methodeDropdownLabel');
         if (dropdownLabel) dropdownLabel.textContent = window.AppCore.methodeConstitution === 'scoreCompetitif' ? 'Score compétitif' : 'Niveau total';
